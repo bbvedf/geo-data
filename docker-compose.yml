@@ -1,0 +1,96 @@
+# docker-compose.yml (versión producción)
+version: '3.8'
+
+services:
+  # PostgreSQL + PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: geo-data-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-geodata}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-geodata_prod_password}
+      POSTGRES_DB: ${DB_NAME:-geodata}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5440:5432"
+    networks:
+      - geo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-geodata}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Backend FastAPI (PRODUCCIÓN)
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: geo-data-api
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-geodata}:${DB_PASSWORD:-geodata_prod_password}@postgres:5432/${DB_NAME:-geodata}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8180}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      PYTHON_ENV: production
+    ports:
+      - "8100:8000"
+    networks:
+      - geo-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+  # Frontend React (PRODUCCIÓN - build estático)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: geo-data-web
+    environment:
+      VITE_API_URL: ${API_URL:-http://localhost:8100}
+    networks:
+      - geo-network
+    restart: unless-stopped
+    # NO necesita puertos expuestos - lo sirve nginx
+
+  # Nginx (reverse proxy producción)
+  nginx:
+    image: nginx:alpine
+    container_name: geo-data-nginx
+    ports:
+      - "8180:80"
+      # - "8443:443"  # Si añades SSL más adelante
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx-site.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/dist:/usr/share/nginx/html  # Build de frontend
+    networks:
+      - geo-network
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  geo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
