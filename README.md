@@ -15,13 +15,17 @@ Aplicación de visualización geoespacial y análisis temporal.
 
 
 ## 🚀 CARACTERÍSTICAS  
-- Mapas interactivos con Leaflet
-- Gráficos temporales con Recharts
-- Backend API con FastAPI (Python)
-- Base de datos PostgreSQL + PostGIS
-- Docker listo para producción
-- Diseño responsive con Tailwind CSS
-
+- **Arquitectura Docker:** React + FastAPI + PostgreSQL/PostGIS + Nginx
+- **Base de datos:** 1,710 registros COVID (19 CCAA × 90 días)
+- **Mapa interactivo:** Leaflet con círculos proporcionales a casos
+- **Backend:** FastAPI con SQLAlchemy + GeoAlchemy2
+- **Endpoints REST:** /api/data/covid, /api/covid/stats, /api/docs
+- **Frontend:** React + TypeScript + TailwindCSS
+- **Proxy Nginx:** Configuración producción en puerto 8180
+- **Datos geoespaciales:** Coordenadas reales comunidades autónomas
+- **Docker Compose:** 4 servicios orquestados (frontend, backend, db, nginx)
+- **Variables entorno:** Configuración separada por entorno
+- **Documentación:** Swagger UI integrado en /api/docs"
 
 ## 📊 DATASETS INCLUIDOS  
 1. COVID España - Casos por comunidad autónoma  

@@ -115,23 +115,6 @@ export default function VanillaMap({ data, height = '500px' }: VanillaMapProps) 
           zIndex: 1 
         }}
       />
-      
-      <div className="mt-4 p-4 bg-gray-50 rounded">
-        <div className="text-sm font-medium text-gray-700 mb-2">🎯 Leyenda</div>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
-            <span className="text-sm">Alto (1800+ casos)</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
-            <span className="text-sm">Bajo (menos de 1400)</span>
-          </div>
-          <div className="text-sm text-gray-500">
-            Total puntos: {data.length} | Comunidades: {new Set(data.map(d => d.comunidad)).size}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
