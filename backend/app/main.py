@@ -2,12 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.openapi.docs import get_swagger_ui_html
-from sqlalchemy.orm import Session  # <-- SOLO Session
-from sqlalchemy import func  # <-- func por separado
-from datetime import datetime
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy import and_
+from datetime import datetime, date
+from typing import Optional
 import pandas as pd
 import json
-
 from app.database import get_db
 from app.models import CovidCase
 
@@ -162,3 +163,73 @@ async def get_analysis():
         "average_cases": df["casos_totales"].mean(),
         "top_region": df.loc[df["casos_totales"].idxmax()].to_dict()
     }
+
+# Filtrado avanzado de datos COVID
+@app.get("/api/covid/filter")
+async def filter_covid_data(
+    db: Session = Depends(get_db),
+    comunidad: Optional[str] = None,
+    fecha_inicio: Optional[date] = None,
+    fecha_fin: Optional[date] = None,
+    min_casos: Optional[int] = None,
+    max_casos: Optional[int] = None
+):
+    """Filtrar datos COVID con múltiples parámetros"""
+    try:
+        query = db.query(CovidCase)
+        
+        # Filtro por comunidad
+        if comunidad and comunidad != "todas":
+            query = query.filter(CovidCase.comunidad_autonoma.ilike(f"%{comunidad}%"))
+        
+        # Filtro por fecha
+        if fecha_inicio:
+            query = query.filter(CovidCase.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.filter(CovidCase.fecha <= fecha_fin)
+        
+        # Filtro por rango de casos
+        if min_casos:
+            query = query.filter(CovidCase.casos_confirmados >= min_casos)
+        if max_casos:
+            query = query.filter(CovidCase.casos_confirmados <= max_casos)
+        
+        # Ordenar por fecha y comunidad
+        cases = query.order_by(CovidCase.fecha, CovidCase.comunidad_autonoma).all()
+        
+        # Procesar resultados
+        result = []
+        for case in cases:
+            point_data = db.scalar(case.geom.ST_AsGeoJSON())
+            if point_data:
+                coords = json.loads(point_data)["coordinates"]
+                lon, lat = coords[0], coords[1]
+            else:
+                lat, lon = None, None
+            
+            result.append({
+                "fecha": str(case.fecha),
+                "comunidad": case.comunidad_autonoma,
+                "provincia": case.provincia,
+                "casos": case.casos_confirmados,
+                "ingresos_uci": case.ingresos_uci,
+                "fallecidos": case.fallecidos,
+                "altas": case.altas,
+                "lat": lat,
+                "lon": lon
+            })
+        
+        return {
+            "data": result,
+            "filters_applied": {
+                "comunidad": comunidad,
+                "fecha_inicio": str(fecha_inicio) if fecha_inicio else None,
+                "fecha_fin": str(fecha_fin) if fecha_fin else None,
+                "min_casos": min_casos,
+                "max_casos": max_casos
+            },
+            "count": len(result),
+            "total_casos": sum(c.casos_confirmados for c in cases) if cases else 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al filtrar datos: {str(e)}")

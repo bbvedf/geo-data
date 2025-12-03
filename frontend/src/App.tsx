@@ -24,11 +24,46 @@ interface CovidData {
   lon: number
 }
 
+
+
 function App() {
   const [datasets, setDatasets] = useState<Dataset[]>([])
   const [covidData, setCovidData] = useState<CovidData[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'map' | 'chart' | 'data'>('map')
+  const [filters, setFilters] = useState({
+  comunidad: 'todas',
+  fechaInicio: '2023-01-01',
+  fechaFin: '2023-03-31',
+  minCasos: 0,
+  maxCasos: 10000
+});
+
+  const [filteredData, setFilteredData] = useState<CovidData[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  const applyFilters = async () => {
+  setIsFiltering(true);
+  try {
+    const params = new URLSearchParams();
+    if (filters.comunidad !== 'todas') params.append('comunidad', filters.comunidad);
+    if (filters.fechaInicio) params.append('fecha_inicio', filters.fechaInicio);
+    if (filters.fechaFin) params.append('fecha_fin', filters.fechaFin);
+    if (filters.minCasos > 0) params.append('min_casos', filters.minCasos.toString());
+    if (filters.maxCasos < 10000) params.append('max_casos', filters.maxCasos.toString());
+    
+    const response = await api.get(`/api/covid/filter?${params.toString()}`);
+    setFilteredData(response.data.data);
+    
+    // Mostrar mensaje de resultados
+    console.log(`Filtros aplicados: ${response.data.count} registros encontrados`);
+  } catch (error) {
+    console.error('Error al aplicar filtros:', error);
+    alert('Error al aplicar filtros');
+  } finally {
+    setIsFiltering(false);
+  }
+};
 
   useEffect(() => {
     Promise.all([
@@ -125,15 +160,117 @@ function App() {
 
       <div className="space-y-8">
         {activeTab === 'map' && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-semibold mb-4">🗺️ Mapa de Casos COVID en España</h2>
-            <p className="text-gray-600 mb-6">
-              Mapa interactivo con círculos proporcionales al número de casos.
-              Haz clic en cada punto para más detalles.
-            </p>
-            
-            {/* MAPA (sin leyenda interna) */}
-            <VanillaMap data={covidData} height="600px" />
+  <div className="bg-white rounded-lg shadow-lg p-6">
+    <h2 className="text-2xl font-semibold mb-4">🗺️ Mapa de Casos COVID en España</h2>
+    
+    {/* SECCIÓN DE FILTROS - NUEVO */}
+    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <h3 className="font-medium text-lg text-gray-800 mb-3">🔍 Filtros</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Filtro por comunidad */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Comunidad
+          </label>
+          <select
+            value={filters.comunidad}
+            onChange={(e) => setFilters({...filters, comunidad: e.target.value})}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="todas">Todas las comunidades</option>
+            {Array.from(new Set(covidData.map(d => d.comunidad))).sort().map(comunidad => (
+              <option key={comunidad} value={comunidad}>{comunidad}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Filtro por fecha inicio */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha inicio
+          </label>
+          <input
+            type="date"
+            value={filters.fechaInicio}
+            onChange={(e) => setFilters({...filters, fechaInicio: e.target.value})}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            min="2023-01-01"
+            max="2023-03-31"
+          />
+        </div>
+        
+        {/* Filtro por fecha fin */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha fin
+          </label>
+          <input
+            type="date"
+            value={filters.fechaFin}
+            onChange={(e) => setFilters({...filters, fechaFin: e.target.value})}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            min="2023-01-01"
+            max="2023-03-31"
+          />
+        </div>
+        
+        {/* Botón aplicar filtros */}
+        <div className="flex items-end">
+          <button
+            onClick={applyFilters}
+            disabled={isFiltering}
+            className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isFiltering ? 'Aplicando...' : 'Aplicar Filtros'}
+          </button>
+        </div>
+      </div>
+      
+      {/* Rango de casos (opcional) */}
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Mínimo de casos
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="10000"
+            step="100"
+            value={filters.minCasos}
+            onChange={(e) => setFilters({...filters, minCasos: parseInt(e.target.value)})}
+            className="w-full"
+          />
+          <div className="text-sm text-gray-500">{filters.minCasos.toLocaleString()} casos</div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Máximo de casos
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="10000"
+            step="100"
+            value={filters.maxCasos}
+            onChange={(e) => setFilters({...filters, maxCasos: parseInt(e.target.value)})}
+            className="w-full"
+          />
+          <div className="text-sm text-gray-500">{filters.maxCasos.toLocaleString()} casos</div>
+        </div>
+      </div>
+    </div>
+    
+    <p className="text-gray-600 mb-6">
+      Mapa interactivo con círculos proporcionales al número de casos.
+      Haz clic en cada punto para más detalles.
+    </p>
+    
+    {/* MAPA con datos filtrados */}
+    <VanillaMap data={filteredData.length > 0 ? filteredData : covidData} height="600px" />
+    
             
             {/* LEYENDA CORREGIDA - FUERA del componente VanillaMap */}
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
