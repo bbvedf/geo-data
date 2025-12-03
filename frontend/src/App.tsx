@@ -4,7 +4,7 @@ import './index.css'
 import axios from 'axios'
 import VanillaMap from './components/VanillaMap'
 import CovidChart from './components/CovidChart'
-
+import { FaFilter, FaTrashAlt, FaSpinner } from 'react-icons/fa';
 
 const api = axios.create({
   baseURL: 'http://localhost:8180',
@@ -19,12 +19,11 @@ interface Dataset {
 interface CovidData {
   fecha: string
   comunidad: string
+  provincia: string
   casos: number
   lat: number
   lon: number
 }
-
-
 
 function App() {
   const [datasets, setDatasets] = useState<Dataset[]>([])
@@ -33,6 +32,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'chart' | 'data'>('map')
   const [filters, setFilters] = useState({
   comunidad: 'todas',
+  provincia: 'todas',
   fechaInicio: '2023-01-01',
   fechaFin: '2023-03-31',
   minCasos: 0,
@@ -47,6 +47,7 @@ function App() {
   try {
     const params = new URLSearchParams();
     if (filters.comunidad !== 'todas') params.append('comunidad', filters.comunidad);
+    if (filters.provincia !== 'todas') params.append('provincia', filters.provincia);
     if (filters.fechaInicio) params.append('fecha_inicio', filters.fechaInicio);
     if (filters.fechaFin) params.append('fecha_fin', filters.fechaFin);
     if (filters.minCasos > 0) params.append('min_casos', filters.minCasos.toString());
@@ -64,6 +65,32 @@ function App() {
     setIsFiltering(false);
   }
 };
+
+    const hasActiveFilters = 
+        filters.comunidad !== 'todas' || 
+        filters.provincia !== 'todas' || 
+        filters.fechaInicio !== '2023-01-01' || 
+        filters.fechaFin !== '2023-03-31' ||
+        filters.minCasos > 0 || 
+        filters.maxCasos < 10000;
+
+    const clearFilters = () => {
+    // Restablecer filtros a valores por defecto
+    setFilters({
+        comunidad: 'todas',
+        provincia: 'todas',
+        fechaInicio: '2023-01-01',
+        fechaFin: '2023-03-31',
+        minCasos: 0,
+        maxCasos: 10000
+    });
+    
+    // Limpiar datos filtrados (mostrar todos)
+    setFilteredData([]);
+    
+    // Opcional: Mostrar mensaje
+    console.log('Filtros limpiados, mostrando todos los datos');
+    };
 
   useEffect(() => {
     Promise.all([
@@ -163,105 +190,219 @@ function App() {
   <div className="bg-white rounded-lg shadow-lg p-6">
     <h2 className="text-2xl font-semibold mb-4">🗺️ Mapa de Casos COVID en España</h2>
     
-    {/* SECCIÓN DE FILTROS - NUEVO */}
-    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-      <h3 className="font-medium text-lg text-gray-800 mb-3">🔍 Filtros</h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Filtro por comunidad */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Comunidad
-          </label>
-          <select
-            value={filters.comunidad}
-            onChange={(e) => setFilters({...filters, comunidad: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="todas">Todas las comunidades</option>
-            {Array.from(new Set(covidData.map(d => d.comunidad))).sort().map(comunidad => (
-              <option key={comunidad} value={comunidad}>{comunidad}</option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Filtro por fecha inicio */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Fecha inicio
-          </label>
-          <input
-            type="date"
-            value={filters.fechaInicio}
-            onChange={(e) => setFilters({...filters, fechaInicio: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            min="2023-01-01"
-            max="2023-03-31"
-          />
-        </div>
-        
-        {/* Filtro por fecha fin */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Fecha fin
-          </label>
-          <input
-            type="date"
-            value={filters.fechaFin}
-            onChange={(e) => setFilters({...filters, fechaFin: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            min="2023-01-01"
-            max="2023-03-31"
-          />
-        </div>
-        
-        {/* Botón aplicar filtros */}
-        <div className="flex items-end">
-          <button
-            onClick={applyFilters}
-            disabled={isFiltering}
-            className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isFiltering ? 'Aplicando...' : 'Aplicar Filtros'}
-          </button>
-        </div>
-      </div>
-      
-      {/* Rango de casos (opcional) */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mínimo de casos
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="10000"
-            step="100"
-            value={filters.minCasos}
-            onChange={(e) => setFilters({...filters, minCasos: parseInt(e.target.value)})}
-            className="w-full"
-          />
-          <div className="text-sm text-gray-500">{filters.minCasos.toLocaleString()} casos</div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Máximo de casos
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="10000"
-            step="100"
-            value={filters.maxCasos}
-            onChange={(e) => setFilters({...filters, maxCasos: parseInt(e.target.value)})}
-            className="w-full"
-          />
-          <div className="text-sm text-gray-500">{filters.maxCasos.toLocaleString()} casos</div>
-        </div>
+    {/* SECCIÓN DE FILTROS - MEJORADA */}
+<div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+  <h3 className="font-medium text-lg text-gray-800 mb-3">🔍 Filtros</h3>
+  
+  {/* Indicador de filtros activos - NUEVO */}
+  {(filters.comunidad !== 'todas' || filters.provincia !== 'todas' || 
+    filters.fechaInicio !== '2023-01-01' || filters.fechaFin !== '2023-03-31' ||
+    filters.minCasos > 0 || filters.maxCasos < 10000) && (
+    <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+      <span className="font-medium">⚡ Filtros activos:</span>
+      <div className="flex flex-wrap gap-2 mt-1">
+        {filters.comunidad !== 'todas' && (
+          <span className="px-2 py-1 bg-amber-100 rounded">Comunidad: {filters.comunidad}</span>
+        )}
+        {filters.provincia !== 'todas' && (
+          <span className="px-2 py-1 bg-amber-100 rounded">Provincia: {filters.provincia}</span>
+        )}
+        {(filters.fechaInicio !== '2023-01-01' || filters.fechaFin !== '2023-03-31') && (
+          <span className="px-2 py-1 bg-amber-100 rounded">
+            Fechas: {filters.fechaInicio} a {filters.fechaFin}
+          </span>
+        )}
+        {filters.minCasos > 0 && (
+          <span className="px-2 py-1 bg-amber-100 rounded">Mín: {filters.minCasos} casos</span>
+        )}
+        {filters.maxCasos < 10000 && (
+          <span className="px-2 py-1 bg-amber-100 rounded">Máx: {filters.maxCasos} casos</span>
+        )}
       </div>
     </div>
+  )}
+  
+  {/* FILTROS PRINCIPALES - 6 columnas en desktop */}
+  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+    
+    {/* Comunidad */}
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Comunidad
+      </label>
+      <select
+        value={filters.comunidad}
+        onChange={(e) => setFilters({...filters, comunidad: e.target.value})}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+      >
+        <option value="todas">Todas las comunidades</option>
+        {Array.from(new Set(covidData.map(d => d.comunidad))).sort().map(comunidad => (
+          <option key={comunidad} value={comunidad}>{comunidad}</option>
+        ))}
+      </select>
+    </div>
+    
+    {/* Provincia */}
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Provincia
+      </label>
+      <select
+        value={filters.provincia}
+        onChange={(e) => setFilters({...filters, provincia: e.target.value})}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        disabled={filters.comunidad === 'todas'}
+      >
+        <option value="todas">
+          {filters.comunidad === 'todas' ? 'Selecciona comunidad primero' : 'Todas las provincias'}
+        </option>
+        {filters.comunidad !== 'todas' && 
+          Array.from(new Set(
+            covidData
+              .filter(d => d.comunidad === filters.comunidad)
+              .map(d => d.provincia)
+              .filter(p => p)
+          )).sort().map(provincia => (
+            <option key={provincia} value={provincia}>{provincia}</option>
+          ))
+        }
+      </select>
+    </div>
+    
+    {/* Fecha inicio */}
+    <div className="md:col-span-1">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Fecha inicio
+      </label>
+      <input
+        type="date"
+        value={filters.fechaInicio}
+        onChange={(e) => setFilters({...filters, fechaInicio: e.target.value})}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        min="2023-01-01"
+        max="2023-03-31"
+      />
+    </div>
+    
+    {/* Fecha fin */}
+    <div className="md:col-span-1">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Fecha fin
+      </label>
+      <input
+        type="date"
+        value={filters.fechaFin}
+        onChange={(e) => setFilters({...filters, fechaFin: e.target.value})}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        min="2023-01-01"
+        max="2023-03-31"
+      />
+    </div>
+    
+    {/* BOTONES - Ahora en su propia fila para más espacio */}
+  </div>
+  
+  {/* SEGUNDA FILA: Rangos de casos + Botones */}
+  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    
+    {/* Mínimo de casos */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Mínimo de casos
+      </label>
+      <div className="flex items-center space-x-3">
+        <input
+          type="range"
+          min="0"
+          max="10000"
+          step="100"
+          value={filters.minCasos}
+          onChange={(e) => setFilters({...filters, minCasos: parseInt(e.target.value)})}
+          className="flex-1"
+        />
+        <span className="text-sm font-medium text-gray-700 min-w-[80px]">
+          {filters.minCasos.toLocaleString()}
+        </span>
+      </div>
+    </div>
+    
+    {/* Máximo de casos */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Máximo de casos
+      </label>
+      <div className="flex items-center space-x-3">
+        <input
+          type="range"
+          min="0"
+          max="10000"
+          step="100"
+          value={filters.maxCasos}
+          onChange={(e) => setFilters({...filters, maxCasos: parseInt(e.target.value)})}
+          className="flex-1"
+        />
+        <span className="text-sm font-medium text-gray-700 min-w-[80px]">
+          {filters.maxCasos.toLocaleString()}
+        </span>
+      </div>
+    </div>
+    
+    {/* BOTONES - Con mejor layout */}
+    <div className="flex items-end space-x-3">
+      <button
+        onClick={applyFilters}
+        disabled={isFiltering}
+        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow flex items-center justify-center"
+      >
+        {isFiltering ? (
+          <>
+            <FaSpinner className="animate-spin mr-2" />
+            Aplicando...
+          </>
+        ) : (
+          <>
+            <FaFilter className="mr-2" />
+            Aplicar Filtros
+          </>
+        )}
+      </button>
+      
+      <button
+  onClick={clearFilters}
+  disabled={isFiltering || !hasActiveFilters}  // Deshabilitado si no hay filtros
+  className={`flex-1 px-4 py-3 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow flex items-center justify-center
+    ${hasActiveFilters 
+      ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 focus:ring-rose-400' 
+      : 'bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300'
+    }`}
+    title={hasActiveFilters ? "Restablecer todos los filtros" : "No hay filtros activos"}
+    >
+    <FaTrashAlt className="mr-2" />
+    Limpiar
+    </button>
+    </div>
+  </div>
+  
+  {/* Contador de resultados */}
+  {filteredData.length > 0 && (
+    <div className="mt-3 pt-3 border-t border-gray-300">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-600">
+          📊 Mostrando <span className="font-semibold text-gray-800">{filteredData.length}</span> de{' '}
+          <span className="font-semibold text-gray-800">{covidData.length}</span> registros
+        </span>
+        <span className="text-xs text-gray-500">
+          {((filteredData.length / covidData.length) * 100).toFixed(1)}% del total
+        </span>
+      </div>
+    </div>
+  )}
+</div>
+
+        
+
+
+      
     
     <p className="text-gray-600 mb-6">
       Mapa interactivo con círculos proporcionales al número de casos.

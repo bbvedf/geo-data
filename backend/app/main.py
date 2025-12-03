@@ -92,6 +92,7 @@ async def get_covid_data(db: Session = Depends(get_db)):
             result.append({
                 "fecha": str(case.fecha),
                 "comunidad": case.comunidad_autonoma,
+                "provincia": case.provincia,
                 "casos": case.casos_confirmados,
                 "ingresos_uci": case.ingresos_uci,
                 "fallecidos": case.fallecidos,
@@ -117,6 +118,14 @@ async def get_covid_stats(db: Session = Depends(get_db)):
             func.avg(CovidCase.casos_confirmados).label("promedio_diario")
         ).group_by(CovidCase.comunidad_autonoma).all()
         
+        # Total casos por provincia
+        total_por_provincia = db.query(
+            CovidCase.provincia,
+            CovidCase.comunidad_autonoma,
+            func.sum(CovidCase.casos_confirmados).label("total_casos"),
+            func.sum(CovidCase.fallecidos).label("total_fallecidos")
+        ).group_by(CovidCase.provincia, CovidCase.comunidad_autonoma).all()
+
         # Totales generales
         totals = db.query(
             func.sum(CovidCase.casos_confirmados).label("total_casos"),
@@ -135,11 +144,21 @@ async def get_covid_stats(db: Session = Depends(get_db)):
                 }
                 for r in total_por_comunidad
             ],
+            "por_provincia": [
+                {
+                    "provincia": r.provincia,
+                    "comunidad": r.comunidad_autonoma,
+                    "total_casos": int(r.total_casos),
+                    "total_fallecidos": int(r.total_fallecidos)
+                }
+                for r in total_por_provincia
+            ],
             "totales": {
                 "total_casos": int(totals.total_casos) if totals.total_casos else 0,
                 "total_fallecidos": int(totals.total_fallecidos) if totals.total_fallecidos else 0,
                 "total_uci": int(totals.total_uci) if totals.total_uci else 0,
-                "dias_registrados": totals.dias_registrados
+                "dias_registrados": totals.dias_registrados,
+                "provincias_registradas": totals.provincias_registradas
             }
         }
     except Exception as e:
@@ -169,7 +188,8 @@ async def get_analysis():
 async def filter_covid_data(
     db: Session = Depends(get_db),
     comunidad: Optional[str] = None,
-    fecha_inicio: Optional[date] = None,
+    provincia: Optional[str] = None,
+    fecha_inicio: Optional[date] = None,    
     fecha_fin: Optional[date] = None,
     min_casos: Optional[int] = None,
     max_casos: Optional[int] = None
@@ -182,6 +202,10 @@ async def filter_covid_data(
         if comunidad and comunidad != "todas":
             query = query.filter(CovidCase.comunidad_autonoma.ilike(f"%{comunidad}%"))
         
+        # Filtro por provincia
+        if provincia and provincia != "todas":
+            query = query.filter(CovidCase.provincia.ilike(f"%{provincia}%"))
+
         # Filtro por fecha
         if fecha_inicio:
             query = query.filter(CovidCase.fecha >= fecha_inicio)
