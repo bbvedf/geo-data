@@ -7,7 +7,7 @@ import CovidChart from './components/CovidChart'
 
 
 const api = axios.create({
-  baseURL: 'http://localhost:8100',
+  baseURL: 'http://localhost:8180',
 })
 
 interface Dataset {
@@ -73,7 +73,7 @@ function App() {
             </div>
             <div className="mt-4 md:mt-0">
               <a
-                href="http://localhost:8100/docs"
+                href="http://localhost:8100/api/docs"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -201,7 +201,7 @@ function App() {
             <div className="mt-4 md:mt-0">
               <div className="flex space-x-4">
                 <a
-                  href="http://localhost:8100"
+                  href="http://localhost:8180/api"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50"
@@ -209,7 +209,7 @@ function App() {
                   🌐 Backend API
                 </a>
                 <a
-                  href="http://localhost:8100/docs"
+                  href="http://localhost:8180/api/docs"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

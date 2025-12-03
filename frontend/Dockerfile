@@ -1,31 +1,15 @@
-# frontend/Dockerfile
-# Build stage
-FROM node:18-alpine as builder
+# frontend/Dockerfile - SOLO para build (sin servir)
+FROM node:18-alpine
 
 WORKDIR /app
 
-# 1. Copiar package.json e instalar
+# Copiar dependencias
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --production=false
 
-# 2. Copiar código y build
+# Copiar todo el código
 COPY . .
-RUN yarn build
 
-# 3. Production stage (solo servir archivos estáticos)
-FROM nginx:alpine
-
-# 4. Copiar build de React
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# 5. Copiar configuración Nginx
-COPY docker/nginx-site.conf /etc/nginx/conf.d/default.conf
-
-# 6. Health check endpoint
-RUN echo '{"status": "healthy", "service": "frontend"}' > /usr/share/nginx/html/health.json
-
-# 7. Exponer puerto
-EXPOSE 80
-
-# 8. Comando
-CMD ["nginx", "-g", "daemon off;"]
+# El comando de build se hará en docker-compose
+# Esto es solo para tener las dependencias instaladas
+CMD ["sh", "-c", "yarn build && tail -f /dev/null"]

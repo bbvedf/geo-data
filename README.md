@@ -50,10 +50,11 @@ cp .env.example .env
 docker-compose up -d
 ```
 ### 4. Acceder  
-Frontend: http://localhost:8180  
-Backend API: http://localhost:8100  
-API Docs: http://localhost:8180/docs  
-
+✅ Frontend en http://localhost:8180  
+✅ API a través de Nginx en http://localhost:8180/api/*  
+✅ Swagger docs en http://localhost:8180/api/docs  
+✅ Backend directo en http://localhost:8100 (para desarrollo)  
+✅ Base de datos en localhost:5440  
 
 ## 🧪 DESARROLLO LOCAL  
 ### Backend:  

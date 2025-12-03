@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
 from datetime import datetime
 import pandas as pd
 
@@ -74,3 +76,21 @@ async def get_analysis():
         "average_cases": df["casos_totales"].mean(),
         "top_region": df.loc[df["casos_totales"].idxmax()].to_dict()
     }
+
+# Endpoint /api para redirigir a la raíz
+@app.get("/api")
+async def api_root():
+    return await root()
+
+# Endpoint para OpenAPI spec en /api/openapi.json
+@app.get("/api/openapi.json", include_in_schema=False)
+async def get_openapi():
+    return app.openapi()
+
+# Endpoint /api/docs para Swagger
+@app.get("/api/docs", include_in_schema=False)
+async def api_docs():
+    return get_swagger_ui_html(
+        openapi_url="/api/openapi.json",
+        title="Geo-Data API Documentation"
+    )

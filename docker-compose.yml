@@ -2,7 +2,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL + PostGIS
+  # PostgreSQL + PostGIS (SIN CAMBIOS)
   postgres:
     image: postgis/postgis:15-3.3
     container_name: geo-data-db
@@ -24,7 +24,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # Backend FastAPI (PRODUCCIÓN)
+  # Backend FastAPI (SIN CAMBIOS)
   backend:
     build: 
       context: ./backend
@@ -51,30 +51,31 @@ services:
       retries: 3
     command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
-  # Frontend React (PRODUCCIÓN - build estático)
+  # Frontend React (MODIFICADO - con volumen compartido)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: geo-data-web
-    environment:
-      VITE_API_URL: ${API_URL:-http://localhost:8100}
+    #environment:
+      #VITE_API_URL: ${API_URL:-http://localhost:8180} 
+    volumes:
+      - frontend-dist:/app/dist  # <-- COMPARTE EL BUILD
     networks:
       - geo-network
     restart: unless-stopped
-    # NO necesita puertos expuestos - lo sirve nginx
+    command: sh -c "yarn build && tail -f /dev/null"  # <-- BUILD CONTINUO
 
-  # Nginx (reverse proxy producción)
+  # Nginx (MODIFICADO - usa volumen compartido)
   nginx:
     image: nginx:alpine
     container_name: geo-data-nginx
     ports:
       - "8180:80"
-      # - "8443:443"  # Si añades SSL más adelante
     volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx-site.conf:/etc/nginx/conf.d/default.conf
-      - ./frontend/dist:/usr/share/nginx/html  # Build de frontend
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx-site.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend-dist:/usr/share/nginx/html:ro  # <-- MISMO VOLUMEN
     networks:
       - geo-network
     depends_on:
@@ -93,4 +94,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  frontend-dist:  # <-- VOLUMEN COMPARTIDO DEFINIDO
     driver: local
