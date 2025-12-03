@@ -350,6 +350,20 @@ function App() {
     {/* BOTONES - Con mejor layout */}
     <div className="flex items-end space-x-3">
       <button
+        onClick={clearFilters}
+        disabled={isFiltering || !hasActiveFilters}  // Deshabilitado si no hay filtros
+        className={`flex-1 px-4 py-3 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow flex items-center justify-center
+            ${hasActiveFilters 
+            ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 focus:ring-rose-400' 
+            : 'bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300'
+            }`}
+            title={hasActiveFilters ? "Restablecer todos los filtros" : "No hay filtros activos"}
+            >
+            <FaTrashAlt className="mr-2" />
+            Limpiar
+    </button>      
+      
+      <button
         onClick={applyFilters}
         disabled={isFiltering}
         className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow flex items-center justify-center"
@@ -367,19 +381,7 @@ function App() {
         )}
       </button>
       
-      <button
-  onClick={clearFilters}
-  disabled={isFiltering || !hasActiveFilters}  // Deshabilitado si no hay filtros
-  className={`flex-1 px-4 py-3 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow flex items-center justify-center
-    ${hasActiveFilters 
-      ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 focus:ring-rose-400' 
-      : 'bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300'
-    }`}
-    title={hasActiveFilters ? "Restablecer todos los filtros" : "No hay filtros activos"}
-    >
-    <FaTrashAlt className="mr-2" />
-    Limpiar
-    </button>
+      
     </div>
   </div>
   
