@@ -1,16 +1,258 @@
-/* frontend/src/index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* 1. PRIMERO los imports de Bootstrap */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 
-/* Leaflet */
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  z-index: 1;
+/* 2. LUEGO nuestras variables CON MÁS ESPECIFICIDAD */
+:root,
+body.theme-light,
+[data-bs-theme="light"] {
+  --color-bg: #ffffff;
+  --color-text: #000000;
+  --color-link: #2563eb;
+  --color-card-bg: #f8f9fa;
+  --color-input-bg: #ffffff;
+  --color-input-text: #000000;
+  --color-input-border: #ccc;
+  --color-button-bg: #2563eb;
+  --color-button-text: #ffffff;
+  --color-button-bg-hover: #3b82f6;
+  --color-muted: #666666;
+  --color-tab-active-bg: #2563eb;
+  --color-tab-active-text: #ffffff;  
+  --color-border: #dee2e6;           /* Borde gris claro */
+  --color-footer-bg: #f8f9fa;        /* Footer gris claro */
+  --color-badge-bg: #0d6efd;         /* Badge azul Bootstrap */
+  --color-slider-bg: #0d6efd;        /* Slider azul */
+  --color-header-bg: #f8f9fa;        /* Header gris claro (igual que card-bg en light) */
 }
 
-/* Fix para iconos */
-.leaflet-default-icon-path {
-  background-image: url(https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png);
+body.theme-dark,
+[data-bs-theme="dark"] {
+  --color-bg: #1e1e2f;               /* Azul/gris oscuro - FONDO GENERAL */
+  --color-text: #e0e0e0;
+  --color-link: #fbc02d;
+  --color-card-bg: #1e1e1e;          /* Negro - CARDS, CONTENIDO */
+  --color-input-bg: #2c2c2c;
+  --color-input-text: #ffffff;
+  --color-input-border: #444444;
+  --color-button-bg: #fbc02d;
+  --color-button-text: #000000;
+  --color-button-bg-hover: #fff176;
+  --color-muted: #999999;
+  --color-tab-active-bg: #c9a800; 
+  --color-tab-active-text: #000000;
+  --color-border: #495057;           /* Borde gris oscuro */
+  --color-footer-bg: #2d3748;        /* Footer azul/gris oscuro */
+  --color-badge-bg: #fbc02d;         /* Badge amarillo */
+  --color-slider-bg: #fbc02d;        /* Slider amarillo */
+  --color-header-bg: #1e1e1e;        /* Negro - HEADER Y MENU */
+}
+
+/* ========== 3. ESTILOS BASE ========== */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  min-height: 100vh;
+}
+
+/* ========== 4. HEADER CON Z-INDEX ========== */
+.app-header {
+  z-index: 200;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Header específico para modo oscuro (negro) */
+body.theme-dark .app-header,
+body.theme-dark header.bg-body-tertiary {
+  background-color: var(--color-header-bg) !important; /* #1e1e1e */
+}
+
+/* Header en modo claro */
+body.theme-light .app-header,
+body.theme-light header.bg-body-tertiary {
+  background-color: var(--color-card-bg) !important; /* #f8f9fa */
+}
+
+/* ========== 5. COMPONENTES BOOTSTRAP ========== */
+/* Cards, containers, paneles */
+.card,
+.login-box,
+.container,
+.panel,
+.bg-light {
+  background-color: var(--color-card-bg) !important;
+  color: var(--color-text) !important;
+}
+
+.card-body { 
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+
+/* bg-body-tertiary para elementos generales (excepto header/footer) */
+.bg-body-tertiary:not(header):not(footer) {
+  background-color: var(--color-card-bg) !important;
+  color: var(--color-text) !important;
+}
+
+/* ========== 6. FORMULARIOS ========== */
+input,
+textarea,
+select,
+.form-control,
+.form-select {
+  background-color: var(--color-input-bg) !important;
+  color: var(--color-input-text) !important;
+  border: 1px solid var(--color-input-border) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted) !important;
+}
+
+/* ========== 7. BOTONES ========== */
+.btn-primary {
+  background-color: var(--color-button-bg) !important;
+  color: var(--color-button-text) !important;
+  border-color: var(--color-button-bg) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-button-bg-hover) !important;
+  border-color: var(--color-button-bg-hover) !important;
+}
+
+.btn-outline-primary {
+  color: var(--color-button-bg) !important;
+  border-color: var(--color-button-bg) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-button-bg) !important;
+  color: var(--color-button-text) !important;
+}
+
+/* ========== 8. TABS ========== */
+.nav-tabs .nav-link.active {
+  background-color: var(--color-tab-active-bg) !important;
+  color: var(--color-tab-active-text) !important;
+  border-color: var(--color-tab-active-bg) !important;
+}
+
+/* Para tabs INACTIVOS en modo oscuro */
+[data-bs-theme="dark"] .nav-tabs .nav-link:not(.active) {
+  color: #999 !important; /* Gris para inactivos */
+  background-color: transparent !important;
+}
+
+/* Para tabs INACTIVOS en modo claro */
+[data-bs-theme="light"] .nav-tabs .nav-link:not(.active) {
+  color: #666 !important; /* Gris más oscuro */
+  background-color: transparent !important;
+}
+
+/* O más específico para hover de inactivos */
+.nav-tabs .nav-link:not(.active):hover {
+  color: var(--color-link) !important; /* Color de enlace al hover */
+}
+
+
+/* ========== 9. TEXTO Y ENLACES ========== */
+small,
+.text-muted {
+  color: var(--color-muted) !important;
+}
+
+.fw-medium, .h5, .h2, h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text) !important;
+}
+
+a {
+  color: var(--color-link) !important;
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.85;
+}
+
+/* ========== 10. HEADERS DE CARDS ========== */
+.card-header.bg-primary {
+  background-color: var(--color-button-bg) !important;
+  color: var(--color-button-text) !important;
+  border-color: var(--color-button-bg) !important;
+}
+
+/* Texto en headers de cards (especialmente "🔍 Filtros") */
+.card-header {
+  color: var(--color-button-text) !important;
+}
+
+/* ========== 11. BORDES ========== */
+.card.border-primary {
+  border-color: var(--color-border) !important;
+}
+
+.border,
+.border-top,
+.border-bottom,
+.border-start,
+.border-end {
+  border-color: var(--color-border) !important;
+}
+
+/* ========== 12. BADGES ========== */
+.badge.bg-info {
+  background-color: var(--color-badge-bg) !important;
+  color: var(--color-button-text) !important;
+}
+
+/* ========== 13. SLIDERS ========== */
+.form-range::-webkit-slider-thumb {
+  background-color: var(--color-slider-bg) !important;
+}
+
+.form-range::-moz-range-thumb {
+  background-color: var(--color-slider-bg) !important;
+}
+
+/* ========== 14. FOOTER ========== */
+/* Footer usa color específico diferente */
+footer.bg-body-tertiary {
+  background-color: var(--color-footer-bg) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Leyenda (ya tiene su clase) */
+.geo-legend-box {
+  background-color: var(--color-card-bg) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* ========== 15. CARDS ANIDADAS ========== */
+.card .card {
+  background-color: color-mix(in srgb, var(--color-card-bg), transparent 10%) !important;
+}
+
+/* ========== 16. TABLAS ========== */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--color-text);
+  --bs-table-border-color: var(--color-border);
+}
+
+.table-hover tbody tr:hover {
+  background-color: color-mix(in srgb, var(--color-card-bg), black 5%) !important;
+}
+
+/* ========== 17. MENU HAMBURGUESA ========== */
+/* Si el ThemeMenu usa bg-body-tertiary */
+.theme-menu-container,
+[class*="theme-menu"] {
+  background-color: var(--color-header-bg) !important;
 }

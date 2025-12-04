@@ -6,7 +6,6 @@
 ![PostGIS](https://img.shields.io/badge/PostGIS-3.3-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-24.0-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?style=for-the-badge&logo=leaflet&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-1.25-009639?style=for-the-badge&logo=nginx&logoColor=white)
 
@@ -20,7 +19,7 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Mapa interactivo:** Leaflet con círculos proporcionales a casos
 - **Backend:** FastAPI con SQLAlchemy + GeoAlchemy2
 - **Endpoints REST:** /api/data/covid, /api/covid/stats, /api/docs
-- **Frontend:** React + TypeScript + TailwindCSS
+- **Frontend:** React + TypeScript + Bootstrap
 - **Proxy Nginx:** Configuración producción en puerto 8180
 - **Datos geoespaciales:** Coordenadas reales comunidades autónomas
 - **Docker Compose:** 4 servicios orquestados (frontend, backend, db, nginx)

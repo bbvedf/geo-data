@@ -1,0 +1,151 @@
+.menuContainer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+/* Botón hamburguesa */
+.hamburgerButton {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 0.5rem; /* Margen adicional a la derecha */
+}
+
+.hamburgerButton:hover {
+  background: var(--color-input-bg);
+}
+
+.hamburgerLine {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--color-text);
+  transition: all 0.3s ease;
+}
+
+/* Menú desplegable - Estilo base (para desktop) */
+.menuDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem); /* Aparece debajo del botón */
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 0.5rem;
+  min-width: 200px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.menuDivider {
+  height: 1px;
+  background-color: var(--color-input-border);
+  margin: 8px 12px;
+}
+
+.themeToggle {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 2px;
+}
+
+.themeToggle:hover {
+  background: var(--color-input-bg);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuItem {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0.75rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.menuItem:hover {
+  background: var(--color-input-bg);
+}
+
+.menuItem:first-child {
+  margin-bottom: 0.25rem;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  stroke-width: 2;
+}
+
+
+.submenuHeader {
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+  user-select: none;
+  margin: 8px 0 4px 0;
+  border-radius: 6px;  
+  
+  /* Usar variables del tema */
+  background: linear-gradient(135deg, var(--color-link), var(--color-button-bg-hover));
+  opacity: 0.9;
+}
+
+
+
+/* Versión móvil */
+@media (max-width: 768px) {
+  .menuContainer {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+  
+  .menuDropdown {
+    right: -0.5rem; /* Ajuste fino de posición */
+    top: calc(100% + 0.25rem); /* Se mantiene debajo del botón */
+  }
+ 
+  .menuItem {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+}
