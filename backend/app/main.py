@@ -65,7 +65,7 @@ async def api_docs():
 @app.get("/api/datasets")
 async def get_datasets():
     datasets = [
-        {"id": "covid-spain", "name": "COVID España", "type": "geo-temporal"},
+        {"id": "covid", "name": "COVID España", "type": "geo-temporal"},
         {"id": "elections", "name": "Resultados Electorales", "type": "geo"},
         {"id": "housing-prices", "name": "Precios Vivienda", "type": "geo-temporal"},
     ]
