@@ -2,12 +2,38 @@
 <html lang="es" data-bs-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/logo_light.png" id="logo_light" />
+    <link rel="icon" type="image/png" href="/logo_dark.png" id="logo_dark" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Geo-Data Analytics</title>
+    <title>Geo-Data Analytics</title>  
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      function updateFavicon(theme) {
+        const lightIcon = document.getElementById('logo_light');
+        const darkIcon = document.getElementById('logo_dark');
+        
+        if (theme === 'dark') {
+          lightIcon?.removeAttribute('href');
+          darkIcon?.setAttribute('href', '/logo_dark.png');
+        } else {
+          darkIcon?.removeAttribute('href');
+          lightIcon?.setAttribute('href', '/logo_light.png');
+        }
+      }
+      
+      // Escuchar evento de React
+      window.addEventListener('themechange', (event) => {
+        updateFavicon(event.detail);
+      });
+      
+      // Inicializar con tema actual
+      setTimeout(() => {
+        const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+        updateFavicon(currentTheme);
+      }, 100);
+    </script>
   </body>
 </html>

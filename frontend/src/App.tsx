@@ -8,10 +8,14 @@ function App() {
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(`theme-${theme}`);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  document.body.classList.remove('theme-light', 'theme-dark');
+  document.body.classList.add(`theme-${theme}`);
+  localStorage.setItem('theme', theme);
+  
+  // Disparar evento personalizado
+  window.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
+ }, [theme]);
+
 
   return (
     <BrowserRouter>

@@ -256,3 +256,37 @@ footer.bg-body-tertiary {
 [class*="theme-menu"] {
   background-color: var(--color-header-bg) !important;
 }
+
+/* ========== 18. AJUSTES DE POSICIONAMIENTO ========== */
+/* Header fijo */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  width: 100%;
+}
+
+/* Espacio para el header fijo */
+main.container {
+  margin-top: 80px !important;
+}
+
+/* Menú ajustado */
+.menuContainer {
+  position: fixed;
+  top: 5.5rem; /* Header height + spacing */
+  right: 1rem;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  main.container {
+    margin-top: 70px !important;
+  }
+  
+  .menuContainer {
+    top: 4.5rem;
+  }
+}

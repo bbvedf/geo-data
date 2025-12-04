@@ -26,7 +26,7 @@ interface CovidData {
 }
 
 function CovidDatasetView() {  
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [_datasets, setDatasets] = useState<Dataset[]>([]);
   const [covidData, setCovidData] = useState<CovidData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'map' | 'chart' | 'data'>('map');
