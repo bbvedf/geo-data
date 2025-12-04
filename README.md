@@ -14,17 +14,15 @@ Aplicación de visualización geoespacial y análisis temporal.
 
 
 ## 🚀 CARACTERÍSTICAS  
-- **Arquitectura Docker:** React + FastAPI + PostgreSQL/PostGIS + Nginx
-- **Base de datos:** 1,710 registros COVID (19 CCAA × 90 días)
-- **Mapa interactivo:** Leaflet con círculos proporcionales a casos
-- **Backend:** FastAPI con SQLAlchemy + GeoAlchemy2
-- **Endpoints REST:** /api/data/covid, /api/covid/stats, /api/docs
-- **Frontend:** React + TypeScript + Bootstrap
-- **Proxy Nginx:** Configuración producción en puerto 8180
-- **Datos geoespaciales:** Coordenadas reales comunidades autónomas
-- **Docker Compose:** 4 servicios orquestados (frontend, backend, db, nginx)
-- **Variables entorno:** Configuración separada por entorno
-- **Documentación:** Swagger UI integrado en /api/docs"
+- **Dashboard inicial:** Selección de datasets con cards interactivas
+- **Arquitectura modular:** Componentes separados (Dashboard, Dataset, Header, Footer)
+- **Routing profesional:** React Router con navegación entre vistas
+- **Sistema de temas:** Claro/oscuro con persistencia en localStorage
+- **Vistas específicas por dataset:** Mapa, Gráficos y Datos en tabs
+- **Datos COVID España:** 4,680 registros (19 CCAA × 90 días × provincias)
+- **Backend FastAPI:** Con filtros avanzados y estadísticas
+- **Frontend React:** TypeScript, Bootstrap 5, Leaflet, Recharts
+
 
 ## 📊 DATASETS INCLUIDOS  
 1. COVID España - Casos por comunidad autónoma  
@@ -32,10 +30,10 @@ Aplicación de visualización geoespacial y análisis temporal.
 
 
 ## 🛠️ TECNOLOGÍAS  
-Frontend: React 18, TypeScript, Vite, Leaflet, Recharts, Tailwind  
-Backend: FastAPI, Python 3.11, Pandas, SQLAlchemy  
-Base de datos: PostgreSQL 15, PostGIS  
-Infraestructura: Docker, Docker Compose, Nginx  
+- **Frontend:** React 18, TypeScript, Vite, Bootstrap 5, Leaflet, Recharts, React Router
+- **Backend:** FastAPI, Python 3.11, SQLAlchemy, GeoAlchemy2, Pandas
+- **Base de datos:** PostgreSQL 15 + PostGIS 3.3
+- **Infraestructura:** Docker, Docker Compose, Nginx
 
 
 ## 🐳 INICIO RÁPIDO CON DOCKER  
@@ -91,13 +89,15 @@ geo-data/
 └── docker/  
 
 
-## 🔌 ENDPOINTS API  
-- GET / - Estado del API  
-- GET /health - Health check  
-- GET /api/datasets - Lista de datasets  
-- GET /api/data/covid - Datos COVID España  
-- GET /api/data/elections - Datos elecciones  
-- GET /docs - Documentación Swagger UI  
+## 🔌 ENDPOINTS API
+- `GET /` - Estado del API  
+- `GET /health` - Health check  
+- `GET /api/datasets` - Lista de datasets disponibles  
+- `GET /api/data/covid` - Todos los datos COVID  
+- `GET /api/covid/stats` - Estadísticas agregadas COVID  
+- `GET /api/covid/filter` - Filtrado avanzado con parámetros  
+- `GET /api/analysis/summary` - Análisis básico  
+- `GET /api/docs` - Swagger UI interactivo  
 
 
 ## 🚢 DESPLIEGUE  
