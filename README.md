@@ -106,11 +106,14 @@ geo-data/
 - `GET /` - Estado del API  
 - `GET /health` - Health check  
 - `GET /api/datasets` - Lista de datasets disponibles  
-- `GET /api/data/covid` - Todos los datos COVID  
+- `GET /api/covid/data` - Todos los datos COVID  
 - `GET /api/covid/stats` - Estadísticas agregadas COVID  
 - `GET /api/covid/filter` - Filtrado avanzado con parámetros  
-- `GET /api/data/weather` - Datos meteorológicos  
+- `GET /api/weather/data` - Datos meteorológicos  
 - `GET /api/weather/stats` - Estadísticas meteorológicas  
+- `GET /api/elections/data` - Resultados electorales  
+- `GET /api/elections/stats` - Estadísticas electorales  
+- `GET /api/elections/party/{partido}` - Resultados por partido  
 - `GET /api/analysis/summary` - Análisis básico  
 - `GET /api/docs` - Swagger UI interactivo  
 

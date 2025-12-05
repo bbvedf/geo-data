@@ -88,7 +88,7 @@ function CovidDatasetView() {
   useEffect(() => {
     Promise.all([
       api.get('/api/datasets'),
-      api.get('/api/data/covid')
+      api.get('/api/covid/data')
     ])
     .then(([datasetsRes, covidRes]) => {
       setDatasets(datasetsRes.data.datasets)

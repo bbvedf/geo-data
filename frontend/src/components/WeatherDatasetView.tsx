@@ -104,7 +104,7 @@ function WeatherDatasetView() {
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
-        const response = await api.get('/api/data/weather');
+        const response = await api.get('/api/weather/data');
         setWeatherData(response.data.data);
         console.log(`Datos clima cargados: ${response.data.count} ciudades`);
       } catch (error) {

@@ -5,8 +5,8 @@ from typing import Optional
 import requests
 from datetime import datetime
 
-# Crear router, NO importar app
-router = APIRouter()
+# Definir el router
+router = APIRouter(prefix="/api", tags=["weather"])
 
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "tu_api_key_aqui")
 BASE_URL = os.getenv("OPENWEATHER_BASE_URL", "http://api.openweathermap.org/data/2.5")
@@ -21,7 +21,7 @@ SPANISH_CITIES = [
     {"name": "Málaga", "lat": 36.7194, "lon": -4.4200},
 ]
 
-@router.get("/api/data/weather")
+@router.get("/weather/data")
 async def get_weather_data(
     city: Optional[str] = None,
     limit: int = 6
