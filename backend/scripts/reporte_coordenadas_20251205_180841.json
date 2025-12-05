@@ -1,0 +1,8 @@
+{
+  "fecha": "2025-12-05T18:08:41.314252",
+  "archivo_origen": "/home/bbvedf/prog/geo-data/backend/data/nomenclator_municipios.csv",
+  "municipios_cnig": 8132,
+  "actualizados": 7988,
+  "no_encontrados": 144,
+  "errores": 0
+}

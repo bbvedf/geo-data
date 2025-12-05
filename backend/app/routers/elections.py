@@ -16,7 +16,7 @@ async def get_election_data(
     partido_ganador: Optional[str] = Query(None, description="Partido ganador"),
     min_participacion: Optional[float] = Query(None, ge=0, le=100, description="Participación mínima (%)"),
     max_participacion: Optional[float] = Query(None, ge=0, le=100, description="Participación máxima (%)"),
-    limit: Optional[int] = Query(100, ge=1, le=1000, description="Límite de resultados"),
+    limit: Optional[int] = Query(100, ge=1, le=10000, description="Límite de resultados"),
     db: Session = Depends(get_db)
 ):
     """

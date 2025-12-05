@@ -1,6 +1,6 @@
-// src/components/ThemeMenu.tsx - VERSIÓN ACTUALIZADA
+// src/components/ThemeMenu.tsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // <-- Añadir
+import { useNavigate } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import styles from './ThemeMenu.module.css';
 
@@ -67,10 +67,9 @@ const ThemeMenu = ({ theme, setTheme }: ThemeMenuProps) => {
           <button 
             className={styles.menuItem}
             onClick={() => {
-              // navigate('/dataset/elections'); // Descomentar cuando exista
+              navigate('/dataset/elections');
               setIsOpen(false);
-            }}
-            disabled // Temporal
+            }}            
           >
             <i className="bi bi-bar-chart-fill"></i>
             Resultados Electorales
@@ -90,23 +89,6 @@ const ThemeMenu = ({ theme, setTheme }: ThemeMenuProps) => {
           
           <div className={styles.menuDivider}></div>
           
-          {/* Opciones antiguas (las de tabs) - ELIMINAR O MANTENER? */}
-          {/* 
-          <button className={styles.menuItem} onClick={() => setIsOpen(false)}>
-            <i className="bi bi-map-fill"></i>
-            Mapa Interactivo
-          </button>
-          <button className={styles.menuItem} onClick={() => setIsOpen(false)}>
-            <i className="bi bi-bar-chart-fill"></i>
-            Gráficos
-          </button>
-          <button className={styles.menuItem} onClick={() => setIsOpen(false)}>
-            <i className="bi bi-table"></i>
-            Tabla de Datos
-          </button>
-          
-          <div className={styles.menuDivider}></div>
-          */}
           
           {/* Toggle tema (mantener) */}
           <button 

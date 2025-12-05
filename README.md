@@ -93,6 +93,10 @@ geo-data/
 ├── docker-compose.yml  
 ├── backend/  
 │   ├── app/main.py  
+│   └── app/routers/  
+│       ├── covid.py  
+│       ├── weather.py  
+│       └── elections.py  
 │   ├── requirements.txt  
 │   └── Dockerfile  
 ├── frontend/  

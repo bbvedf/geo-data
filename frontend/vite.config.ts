@@ -10,5 +10,14 @@ export default defineConfig({
     watch: {
       usePolling: true
     }
+  },
+  // AÑADE ESTO:
+  optimizeDeps: {
+    include: ['leaflet', 'leaflet.markercluster']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/leaflet/, /leaflet.markercluster/, /node_modules/]
+    }
   }
 })
