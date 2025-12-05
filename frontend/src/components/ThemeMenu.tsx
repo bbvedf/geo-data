@@ -52,7 +52,18 @@ const ThemeMenu = ({ theme, setTheme }: ThemeMenuProps) => {
             <i className="bi bi-virus"></i>
             COVID España
           </button>
-          
+            
+          <button 
+            className={styles.menuItem}
+            onClick={() => {
+              navigate('/dataset/weather');
+              setIsOpen(false);
+            }}
+          >
+            <i className="bi bi-cloud-sun-fill"></i>
+            Clima España
+          </button>  
+
           <button 
             className={styles.menuItem}
             onClick={() => {

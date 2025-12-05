@@ -11,6 +11,7 @@ import pandas as pd
 import json
 from app.database import get_db
 from app.models import CovidCase
+from app.weather import router as weather_router
 
 app = FastAPI(
     title="Geo-Data API",
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Incluir router de weather
+app.include_router(weather_router)
 
 # Endpoint raíz
 @app.get("/")
@@ -66,8 +70,9 @@ async def api_docs():
 async def get_datasets():
     datasets = [
         {"id": "covid", "name": "COVID España", "type": "geo-temporal"},
+        {"id": "weather", "name": "Clima España", "type": "geo-temporal"},
         {"id": "elections", "name": "Resultados Electorales", "type": "geo"},
-        {"id": "housing-prices", "name": "Precios Vivienda", "type": "geo-temporal"},
+        {"id": "housing-prices", "name": "Precios Vivienda", "type": "geo-temporal"}
     ]
     return {"datasets": datasets}
 

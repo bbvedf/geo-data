@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import VanillaMap from './VanillaMap'
 import CovidChart from './CovidChart'
-import Footer from './Footer'
+//import Footer from './Footer'
 import { FaFilter, FaTrashAlt, FaSpinner } from 'react-icons/fa';
 
 const api = axios.create({
@@ -119,7 +119,7 @@ function CovidDatasetView() {
     <div className="min-vh-100 bg-light">    
 
       
-      <main className="container py-4">
+      
         {/* TABS */}
         <div className="row mb-4">
           <div className="col-12">
@@ -369,7 +369,10 @@ function CovidDatasetView() {
                   {/* MAPA */}
                   <div className="row mb-4">
                     <div className="col-12">
-                      <VanillaMap data={filteredData.length > 0 ? filteredData : covidData} height="600px" />
+                      <VanillaMap data={filteredData.length > 0 ? filteredData : covidData}
+                      height="600px"
+                      type="covid"
+                      />
                     </div>
                   </div>
                   
@@ -493,13 +496,13 @@ function CovidDatasetView() {
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* FOOTER
         <div className="row mt-4">
           <div className="col-12">
             <Footer dataCount={covidData.length} />
           </div>
-        </div>
-      </main>
+        </div> */}
+      
     </div>
   );
 }

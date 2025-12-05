@@ -2,7 +2,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import './index.css';
-import { Header, DashboardView, CovidDatasetView, ThemeMenu, DatasetNotFoundView } from './components';
+import { Header, DashboardView, CovidDatasetView, ThemeMenu, DatasetNotFoundView, WeatherDatasetView } from './components';
+
 
 function App() {
   const [theme, setTheme] = useState('light');
@@ -25,6 +26,7 @@ function App() {
         <Routes>
           <Route path="/" element={<DashboardView />} />
           <Route path="/dataset/covid" element={<CovidDatasetView />} />
+          <Route path="/dataset/weather" element={<WeatherDatasetView />} />
           {/* <Route path="/dataset/elections" element={<ElectionsDatasetView />} /> */}
           {/* <Route path="/dataset/housing-prices" element={<HousingDatasetView />} /> */}
           <Route path="/dataset/:datasetId" element={<DatasetNotFoundView />} />
