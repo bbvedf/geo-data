@@ -20,13 +20,15 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Sistema de temas:** Claro/oscuro con persistencia en localStorage
 - **Vistas específicas por dataset:** Mapa, Gráficos y Datos en tabs
 - **Datos COVID España:** 4,680 registros (19 CCAA × 90 días × provincias)
+- **Datos Clima España:** Condiciones meteorológicas en tiempo real de ciudades españolas
 - **Backend FastAPI:** Con filtros avanzados y estadísticas
 - **Frontend React:** TypeScript, Bootstrap 5, Leaflet, Recharts
 
 
 ## 📊 DATASETS INCLUIDOS  
-1. COVID España - Casos por comunidad autónoma  
-2. Elecciones - Resultados municipales 2023  
+1. **COVID España** - Casos por comunidad autónoma y provincia (2023)
+2. **Clima España** - Condiciones meteorológicas actuales en ciudades españolas (OpenWeatherMap)
+3. **Elecciones** - Resultados municipales 2023
 
 
 ## 🛠️ TECNOLOGÍAS  
@@ -34,6 +36,7 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Backend:** FastAPI, Python 3.11, SQLAlchemy, GeoAlchemy2, Pandas
 - **Base de datos:** PostgreSQL 15 + PostGIS 3.3
 - **Infraestructura:** Docker, Docker Compose, Nginx
+- **APIs externas:** OpenWeatherMap (para datos meteorológicos)
 
 
 ## 🐳 INICIO RÁPIDO CON DOCKER  
@@ -56,6 +59,16 @@ docker-compose up -d
 ✅ Swagger docs en http://localhost:8180/api/docs  
 ✅ Backend directo en http://localhost:8100 (para desarrollo)  
 ✅ Base de datos en localhost:5440  
+
+🔧 Configuración API Clima  
+Para usar datos en tiempo real de OpenWeatherMap:  
+Regístrate en OpenWeatherMap  
+Obtén tu API Key gratuita  
+Edita .env en backend:  
+```text  
+OPENWEATHER_API_KEY=tu_api_key_aquí  
+```  
+
 
 ## 🧪 DESARROLLO LOCAL  
 ### Backend:  
@@ -96,6 +109,8 @@ geo-data/
 - `GET /api/data/covid` - Todos los datos COVID  
 - `GET /api/covid/stats` - Estadísticas agregadas COVID  
 - `GET /api/covid/filter` - Filtrado avanzado con parámetros  
+- `GET /api/data/weather` - Datos meteorológicos  
+- `GET /api/weather/stats` - Estadísticas meteorológicas  
 - `GET /api/analysis/summary` - Análisis básico  
 - `GET /api/docs` - Swagger UI interactivo  
 
@@ -114,7 +129,7 @@ API_URL=http://localhost:8180/api
 
 
 ## 📈 Próximas características  
-Más datasets (clima, turismo, economía)  
+Más datasets (turismo, economía)  
 Análisis predictivo básico  
 Exportación de datos (CSV, PNG)  
 Autenticación de usuarios  
