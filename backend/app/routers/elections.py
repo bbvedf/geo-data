@@ -17,10 +17,219 @@ async def get_election_data(
     min_participacion: Optional[float] = Query(None, ge=0, le=100, description="Participación mínima (%)"),
     max_participacion: Optional[float] = Query(None, ge=0, le=100, description="Participación máxima (%)"),
     limit: Optional[int] = Query(100, ge=1, le=10000, description="Límite de resultados"),
+    offset: Optional[int] = Query(0, ge=0, description="Offset para paginación"),
+    light: Optional[bool] = Query(False, description="Modo ligero (solo coords + partido)"),
     db: Session = Depends(get_db)
 ):
     """
     Obtener resultados electorales con filtros avanzados
+    
+    **Modo light=true**: Devuelve solo coordenadas, nombre y partido ganador (para mapas)
+    **Modo light=false**: Devuelve todos los datos completos
+    """
+    try:
+        # Query base diferente según modo light
+        if light:
+            query = """
+                SELECT 
+                    m.codigo_ine,
+                    m.nombre_municipio,
+                    m.nombre_provincia,
+                    m.lat,
+                    m.lon,
+                    e.partido_ganador,
+                    e.participacion,
+                    m.poblacion
+                FROM municipios_espana m
+                JOIN elecciones_congreso_2023 e ON m.codigo_ine = e.municipio_ine
+                WHERE 1=1
+            """
+        else:
+            query = """
+                SELECT 
+                    m.codigo_ine,
+                    m.nombre_municipio,
+                    m.nombre_provincia,
+                    m.nombre_comunidad,
+                    m.poblacion,
+                    m.lat,
+                    m.lon,
+                    e.num_mesas,
+                    e.censo,
+                    e.votantes,
+                    e.votos_validos,
+                    e.votos_candidaturas,
+                    e.votos_blanco,
+                    e.votos_nulos,
+                    e.pp,
+                    e.psoe,
+                    e.vox,
+                    e.sumar,
+                    e.erc,
+                    e.jxcat_junts,
+                    e.eh_bildu,
+                    e.eaj_pnv,
+                    e.bng,
+                    e.cca,
+                    e.upn,
+                    e.pacma,
+                    e.cup_pr,
+                    e.fo,
+                    e.participacion,
+                    e.partido_ganador,
+                    e.votos_ganador,
+                    e.total_votos_partidos,
+                    e.created_at
+                FROM municipios_espana m
+                JOIN elecciones_congreso_2023 e ON m.codigo_ine = e.municipio_ine
+                WHERE 1=1
+            """
+        
+        params = {}
+        
+        if municipio:
+            query += " AND m.nombre_municipio ILIKE :municipio"
+            params['municipio'] = f"%{municipio}%"
+        
+        if provincia:
+            query += " AND m.nombre_provincia ILIKE :provincia"
+            params['provincia'] = f"%{provincia}%"
+        
+        if comunidad:
+            query += " AND m.nombre_comunidad ILIKE :comunidad"
+            params['comunidad'] = f"%{comunidad}%"
+        
+        if partido_ganador:
+            query += " AND e.partido_ganador = :partido_ganador"
+            params['partido_ganador'] = partido_ganador
+        
+        if min_participacion is not None:
+            query += " AND e.participacion >= :min_participacion"
+            params['min_participacion'] = min_participacion
+        
+        if max_participacion is not None:
+            query += " AND e.participacion <= :max_participacion"
+            params['max_participacion'] = max_participacion
+        
+        query += " ORDER BY m.nombre_municipio LIMIT :limit OFFSET :offset"
+        params['limit'] = limit
+        params['offset'] = offset
+        
+        result = db.execute(text(query), params)
+        rows = result.fetchall()
+        
+        # Convertir según modo
+        data = []
+        if light:
+            # Modo ligero: solo lo esencial
+            for row in rows:
+                data.append({
+                    "codigo_ine": row[0],
+                    "nombre_municipio": row[1],
+                    "nombre_provincia": row[2],
+                    "lat": float(row[3]) if row[3] else None,
+                    "lon": float(row[4]) if row[4] else None,
+                    "partido_ganador": row[5],
+                    "participacion": float(row[6]) if row[6] else None,
+                    "poblacion": row[7]
+                })
+        else:
+            # Modo completo
+            for row in rows:
+                data.append({
+                    "codigo_ine": row[0],
+                    "nombre_municipio": row[1],
+                    "nombre_provincia": row[2],
+                    "nombre_comunidad": row[3],
+                    "poblacion": row[4],
+                    "lat": float(row[5]) if row[5] else None,
+                    "lon": float(row[6]) if row[6] else None,
+                    "num_mesas": row[7],
+                    "censo": row[8],
+                    "votantes": row[9],
+                    "votos_validos": row[10],
+                    "votos_candidaturas": row[11],
+                    "votos_blanco": row[12],
+                    "votos_nulos": row[13],
+                    "pp": row[14],
+                    "psoe": row[15],
+                    "vox": row[16],
+                    "sumar": row[17],
+                    "erc": row[18],
+                    "jxcat_junts": row[19],
+                    "eh_bildu": row[20],
+                    "eaj_pnv": row[21],
+                    "bng": row[22],
+                    "cca": row[23],
+                    "upn": row[24],
+                    "pacma": row[25],
+                    "cup_pr": row[26],
+                    "fo": row[27],
+                    "participacion": float(row[28]) if row[28] else None,
+                    "partido_ganador": row[29],
+                    "votos_ganador": row[30],
+                    "total_votos_partidos": row[31],
+                    "created_at": row[32].isoformat() if row[32] else None
+                })
+        
+        # Obtener total de registros (para paginación)
+        count_query = """
+            SELECT COUNT(*) 
+            FROM municipios_espana m
+            JOIN elecciones_congreso_2023 e ON m.codigo_ine = e.municipio_ine
+            WHERE 1=1
+        """
+        count_params = {}
+        
+        if municipio:
+            count_query += " AND m.nombre_municipio ILIKE :municipio"
+            count_params['municipio'] = f"%{municipio}%"
+        
+        if provincia:
+            count_query += " AND m.nombre_provincia ILIKE :provincia"
+            count_params['provincia'] = f"%{provincia}%"
+        
+        if comunidad:
+            count_query += " AND m.nombre_comunidad ILIKE :comunidad"
+            count_params['comunidad'] = f"%{comunidad}%"
+        
+        if partido_ganador:
+            count_query += " AND e.partido_ganador = :partido_ganador"
+            count_params['partido_ganador'] = partido_ganador
+        
+        if min_participacion is not None:
+            count_query += " AND e.participacion >= :min_participacion"
+            count_params['min_participacion'] = min_participacion
+        
+        if max_participacion is not None:
+            count_query += " AND e.participacion <= :max_participacion"
+            count_params['max_participacion'] = max_participacion
+        
+        total_result = db.execute(text(count_query), count_params)
+        total = total_result.scalar()
+        
+        return {
+            "success": True,
+            "count": len(data),
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": (offset + len(data)) < total,
+            "light_mode": light,
+            "data": data
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener datos electorales: {str(e)}")
+
+
+@router.get("/elections/municipality/{codigo_ine}")
+async def get_municipality_detail(
+    codigo_ine: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener datos completos de un municipio específico
     """
     try:
         query = """
@@ -60,88 +269,61 @@ async def get_election_data(
                 e.created_at
             FROM municipios_espana m
             JOIN elecciones_congreso_2023 e ON m.codigo_ine = e.municipio_ine
-            WHERE 1=1
+            WHERE m.codigo_ine = :codigo_ine
         """
         
-        params = {}
+        result = db.execute(text(query), {"codigo_ine": codigo_ine})
+        row = result.fetchone()
         
-        if municipio:
-            query += " AND m.nombre_municipio ILIKE :municipio"
-            params['municipio'] = f"%{municipio}%"
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Municipio {codigo_ine} no encontrado")
         
-        if provincia:
-            query += " AND m.nombre_provincia ILIKE :provincia"
-            params['provincia'] = f"%{provincia}%"
-        
-        if comunidad:
-            query += " AND m.nombre_comunidad ILIKE :comunidad"
-            params['comunidad'] = f"%{comunidad}%"
-        
-        if partido_ganador:
-            query += " AND e.partido_ganador = :partido_ganador"
-            params['partido_ganador'] = partido_ganador
-        
-        if min_participacion is not None:
-            query += " AND e.participacion >= :min_participacion"
-            params['min_participacion'] = min_participacion
-        
-        if max_participacion is not None:
-            query += " AND e.participacion <= :max_participacion"
-            params['max_participacion'] = max_participacion
-        
-        query += " ORDER BY m.nombre_municipio LIMIT :limit"
-        params['limit'] = limit
-        
-        result = db.execute(text(query), params)
-        rows = result.fetchall()
-        
-        # Convertir a lista de diccionarios
-        data = []
-        for row in rows:
-            data.append({
-                "codigo_ine": row[0],
-                "nombre_municipio": row[1],
-                "nombre_provincia": row[2],
-                "nombre_comunidad": row[3],
-                "poblacion": row[4],
-                "lat": float(row[5]) if row[5] else None,
-                "lon": float(row[6]) if row[6] else None,
-                "num_mesas": row[7],
-                "censo": row[8],
-                "votantes": row[9],
-                "votos_validos": row[10],
-                "votos_candidaturas": row[11],
-                "votos_blanco": row[12],
-                "votos_nulos": row[13],
-                "pp": row[14],
-                "psoe": row[15],
-                "vox": row[16],
-                "sumar": row[17],
-                "erc": row[18],
-                "jxcat_junts": row[19],
-                "eh_bildu": row[20],
-                "eaj_pnv": row[21],
-                "bng": row[22],
-                "cca": row[23],
-                "upn": row[24],
-                "pacma": row[25],
-                "cup_pr": row[26],
-                "fo": row[27],
-                "participacion": float(row[28]) if row[28] else None,
-                "partido_ganador": row[29],
-                "votos_ganador": row[30],
-                "total_votos_partidos": row[31],
-                "created_at": row[32].isoformat() if row[32] else None
-            })
+        data = {
+            "codigo_ine": row[0],
+            "nombre_municipio": row[1],
+            "nombre_provincia": row[2],
+            "nombre_comunidad": row[3],
+            "poblacion": row[4],
+            "lat": float(row[5]) if row[5] else None,
+            "lon": float(row[6]) if row[6] else None,
+            "num_mesas": row[7],
+            "censo": row[8],
+            "votantes": row[9],
+            "votos_validos": row[10],
+            "votos_candidaturas": row[11],
+            "votos_blanco": row[12],
+            "votos_nulos": row[13],
+            "pp": row[14],
+            "psoe": row[15],
+            "vox": row[16],
+            "sumar": row[17],
+            "erc": row[18],
+            "jxcat_junts": row[19],
+            "eh_bildu": row[20],
+            "eaj_pnv": row[21],
+            "bng": row[22],
+            "cca": row[23],
+            "upn": row[24],
+            "pacma": row[25],
+            "cup_pr": row[26],
+            "fo": row[27],
+            "participacion": float(row[28]) if row[28] else None,
+            "partido_ganador": row[29],
+            "votos_ganador": row[30],
+            "total_votos_partidos": row[31],
+            "created_at": row[32].isoformat() if row[32] else None
+        }
         
         return {
             "success": True,
-            "count": len(data),
             "data": data
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener datos electorales: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener municipio: {str(e)}")
+
 
 @router.get("/elections/stats")
 async def get_election_stats(db: Session = Depends(get_db)):
@@ -211,6 +393,7 @@ async def get_election_stats(db: Session = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener estadísticas: {str(e)}")
+
 
 @router.get("/elections/party/{partido}")
 async def get_party_results(

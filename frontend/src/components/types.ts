@@ -22,31 +22,35 @@ export interface WeatherLocation {
   country?: string
 }
 
+// Interface actualizada para soportar tanto datos light como completos
 export interface ElectionLocation {
+  codigo_ine: string  // ✅ AÑADIDO
   lat: number
   lon: number
   nombre_municipio: string
   nombre_provincia: string
-  nombre_comunidad: string
   poblacion: number
   participacion: number
   partido_ganador: string
-  votos_ganador: number
-  pp: number
-  psoe: number
-  vox: number
-  sumar: number
-  erc: number
-  jxcat_junts: number
-  eh_bildu: number
-  eaj_pnv: number
-  bng: number
-  cca: number
-  upn: number
-  pacma: number
-  cup_pr: number
-  fo: number
-  created_at: string
+  
+  // Campos opcionales (solo en datos completos)
+  nombre_comunidad?: string
+  votos_ganador?: number
+  pp?: number
+  psoe?: number
+  vox?: number
+  sumar?: number
+  erc?: number
+  jxcat_junts?: number
+  eh_bildu?: number
+  eaj_pnv?: number
+  bng?: number
+  cca?: number
+  upn?: number
+  pacma?: number
+  cup_pr?: number
+  fo?: number
+  created_at?: string
 }
 
 export type MapDataType = CovidLocation | WeatherLocation | ElectionLocation;
