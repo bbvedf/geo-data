@@ -5,7 +5,7 @@ import VanillaMap from './VanillaMap';
 import ElectionChart from './ElectionChart';
 import ElectionTable from './ElectionTable';
 import ElectionPartyView from './ElectionPartyView';
-import { FaTrashAlt, FaSpinner, FaChartBar, FaMapMarkedAlt, FaUsers, FaTable } from 'react-icons/fa';
+import { FaTrashAlt, FaSpinner, FaSearch, FaChartBar, FaMapMarkedAlt, FaUsers, FaTable } from 'react-icons/fa';
 
 const api = axios.create({
   baseURL: 'http://localhost:8180',
@@ -61,12 +61,33 @@ interface ElectionStats {
   };
 }
 
+// Traducciones de partidos
+const partyTranslations: Record<string, string> = {
+  'pp': 'PP',
+  'psoe': 'PSOE',
+  'vox': 'VOX',
+  'sumar': 'SUMAR',
+  'erc': 'ERC',
+  'jxcat_junts': 'JxCat/Junts',
+  'eh_bildu': 'EH Bildu',
+  'eaj_pnv': 'EAJ-PNV',
+  'bng': 'BNG',
+  'cca': 'CCA',
+  'upn': 'UPN',
+  'pacma': 'PACMA',
+  'cup_pr': 'CUP/PR',
+  'fo': 'FO',
+  'sin_datos': 'Sin Datos'
+};
+
 function ElectionDatasetView() {
   // Estados principales
-  const [mapData, setMapData] = useState<ElectionDataLight[]>([]);
+  const [allMapData, setAllMapData] = useState<ElectionDataLight[]>([]); // Todos los datos sin filtrar
+  const [filteredMapData, setFilteredMapData] = useState<ElectionDataLight[]>([]); // Datos filtrados
   const [fullData, setFullData] = useState<ElectionDataFull[]>([]);
   const [stats, setStats] = useState<ElectionStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [activeTab, setActiveTab] = useState<'map' | 'chart' | 'data' | 'party'>('map');
   
   // Filtros
@@ -79,7 +100,6 @@ function ElectionDatasetView() {
     max_participacion: 100,
   });
 
-  const [isFiltering, setIsFiltering] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ============ CARGA INICIAL ============
@@ -91,19 +111,16 @@ function ElectionDatasetView() {
         if (!isMounted) return;
         setLoading(true);
 
-        // Cancelar peticiones anteriores
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
         }
         abortControllerRef.current = new AbortController();
 
-        // 1. Cargar datos LIGHT para el mapa (rápido)
-        // 2. Cargar estadísticas
         const [lightResponse, statsResponse] = await Promise.all([
           api.get('/api/elections/data', {
             params: { 
-              limit: 8200, // Todos los municipios
-              light: true  // ¡MODO LIGHT!
+              limit: 8200,
+              light: true
             },
             signal: abortControllerRef.current.signal
           }),
@@ -114,7 +131,6 @@ function ElectionDatasetView() {
 
         if (!isMounted) return;
 
-        // Filtrar datos válidos
         const validMapData = lightResponse.data.data.filter((item: ElectionDataLight) => 
           item.lat && item.lon && 
           !isNaN(item.lat) && !isNaN(item.lon) &&
@@ -124,7 +140,8 @@ function ElectionDatasetView() {
 
         console.log(`✅ Datos light cargados: ${validMapData.length} municipios`);
         
-        setMapData(validMapData);
+        setAllMapData(validMapData);
+        setFilteredMapData(validMapData); // Inicialmente mostrar todos
         setStats(statsResponse.data.stats);
 
       } catch (error: any) {
@@ -151,7 +168,7 @@ function ElectionDatasetView() {
 
   // ============ CARGAR DATOS COMPLETOS PARA GRÁFICOS ============
   const loadFullData = useCallback(async () => {
-    if (fullData.length > 0) return; // Ya cargados
+    if (fullData.length > 0) return;
 
     try {
       setIsFiltering(true);
@@ -159,7 +176,7 @@ function ElectionDatasetView() {
       const response = await api.get('/api/elections/data', {
         params: { 
           limit: 8200,
-          light: false // Datos completos
+          light: false
         }
       });
 
@@ -173,16 +190,17 @@ function ElectionDatasetView() {
     }
   }, [fullData.length]);
 
-  // Cargar datos completos al cambiar a tab de gráficos
   useEffect(() => {
     if (activeTab === 'chart' && fullData.length === 0) {
       loadFullData();
     }
   }, [activeTab, fullData.length, loadFullData]);
 
-  // ============ APLICAR FILTROS (LOCAL) ============
-  const applyLocalFilters = useCallback((data: ElectionDataLight[]) => {
-    return data.filter(item => {
+  // ============ APLICAR FILTROS (MANUAL) ============
+  const applyFilters = useCallback(() => {
+    setIsFiltering(true);
+
+    const filtered = allMapData.filter(item => {
       if (filters.municipio && !item.nombre_municipio.toLowerCase().includes(filters.municipio.toLowerCase())) {
         return false;
       }
@@ -197,10 +215,11 @@ function ElectionDatasetView() {
       }
       return true;
     });
-  }, [filters]);
 
-  // Datos filtrados (memoizado)
-  const filteredMapData = applyLocalFilters(mapData);
+    console.log(`Filtros aplicados: ${filtered.length} de ${allMapData.length} municipios`);
+    setFilteredMapData(filtered);
+    setIsFiltering(false);
+  }, [allMapData, filters]);
 
   // ============ LIMPIAR FILTROS ============
   const clearFilters = () => {
@@ -212,6 +231,7 @@ function ElectionDatasetView() {
       min_participacion: 0,
       max_participacion: 100,
     });
+    setFilteredMapData(allMapData); // Restaurar todos los datos
   };
 
   const hasActiveFilters = 
@@ -323,9 +343,41 @@ function ElectionDatasetView() {
             {/* FILTROS */}
             <div className="card border-primary mb-4">
               <div className="card-header bg-primary text-white">
-                <h3 className="h5 mb-0">🔍 Filtros Electorales</h3>
+                <h3 className="h5 mb-0">
+                  🔍 Filtros Electorales 
+                  {isFiltering && <FaSpinner className="ms-2 fa-spin" />}
+                </h3>
               </div>
               <div className="card-body">
+                {/* Badges de filtros activos */}
+                {hasActiveFilters && (
+                  <div className="alert alert-warning mb-3">
+                    <strong>⚡ Filtros activos:</strong>
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      {filters.municipio && (
+                        <span className="badge bg-warning text-dark">Municipio: {filters.municipio}</span>
+                      )}
+                      {filters.provincia && (
+                        <span className="badge bg-warning text-dark">Provincia: {filters.provincia}</span>
+                      )}
+                      {filters.comunidad && (
+                        <span className="badge bg-warning text-dark">Comunidad: {filters.comunidad}</span>
+                      )}
+                      {filters.partido_ganador !== 'todos' && (
+                        <span className="badge bg-warning text-dark">
+                          Ganador: {partyTranslations[filters.partido_ganador] || filters.partido_ganador}
+                        </span>
+                      )}
+                      {filters.min_participacion > 0 && (
+                        <span className="badge bg-warning text-dark">Part. mín: {filters.min_participacion}%</span>
+                      )}
+                      {filters.max_participacion < 100 && (
+                        <span className="badge bg-warning text-dark">Part. máx: {filters.max_participacion}%</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="row g-3">
                   {/* Municipio */}
                   <div className="col-12 col-md-4">
@@ -348,7 +400,7 @@ function ElectionDatasetView() {
                       onChange={(e) => setFilters({...filters, provincia: e.target.value})}
                     >
                       <option value="">Todas las provincias</option>
-                      {Array.from(new Set(mapData.map(d => d.nombre_provincia)))
+                      {Array.from(new Set(allMapData.map(d => d.nombre_provincia)))
                         .sort()
                         .map(provincia => (
                           <option key={provincia} value={provincia}>{provincia}</option>
@@ -365,10 +417,12 @@ function ElectionDatasetView() {
                       onChange={(e) => setFilters({...filters, partido_ganador: e.target.value})}
                     >
                       <option value="todos">Todos los partidos</option>
-                      {Array.from(new Set(mapData.map(d => d.partido_ganador)))
+                      {Array.from(new Set(allMapData.map(d => d.partido_ganador)))
                         .sort()
                         .map(partido => (
-                          <option key={partido} value={partido}>{partido.toUpperCase()}</option>
+                          <option key={partido} value={partido}>
+                            {partyTranslations[partido] || partido.toUpperCase()}
+                          </option>
                         ))}
                     </select>
                   </div>
@@ -400,15 +454,22 @@ function ElectionDatasetView() {
                     </div>
                   </div>
 
-                  {/* Botón limpiar */}
-                  <div className="col-12 col-md-4 d-flex align-items-end">
+                  {/* Botones */}
+                  <div className="col-12 col-md-4 d-flex gap-2 align-items-end">
                     <button
-                      className="btn btn-danger w-100"
+                      className="btn btn-danger"
                       onClick={clearFilters}
                       disabled={!hasActiveFilters}
                     >
-                      <FaTrashAlt className="me-2" />
-                      Limpiar Filtros
+                      <FaTrashAlt />
+                    </button>
+                    <button
+                      className="btn btn-primary flex-grow-1"
+                      onClick={applyFilters}
+                      disabled={isFiltering}
+                    >
+                      <FaSearch className="me-2" />
+                      {isFiltering ? 'Filtrando...' : 'Aplicar Filtros'}
                     </button>
                   </div>
                 </div>
@@ -417,7 +478,7 @@ function ElectionDatasetView() {
                 <div className="mt-3 pt-3 border-top">
                   <span className="text-muted">
                     📊 Mostrando <strong>{filteredMapData.length.toLocaleString()}</strong> de{' '}
-                    <strong>{mapData.length.toLocaleString()}</strong> municipios
+                    <strong>{allMapData.length.toLocaleString()}</strong> municipios
                   </span>
                 </div>
               </div>
@@ -429,13 +490,86 @@ function ElectionDatasetView() {
                 data={filteredMapData} 
                 height="600px" 
                 type="elections"
+                key={`map-${filteredMapData.length}`}
               />
             </div>
 
-            {/* Leyenda */}
-            <div className="alert alert-info">
-              <strong>💡 Tip:</strong> Haz clic en cualquier municipio para ver detalles completos.
-              Los clusters agrupan municipios cercanos.
+            {/* LEYENDA COMPLETA */}
+            <div className="row">
+              <div className="col-12">
+                <div className="p-3 rounded border" style={{ 
+                  backgroundColor: 'var(--color-card-bg)',
+                  color: 'var(--color-text)'
+                }}>
+                  <div className="row align-items-center">
+                    <div className="col-12 col-md-8 mb-3 mb-md-0">
+                      <div className="d-flex align-items-center">
+                        <div className="fw-medium me-3">🎨 Leyenda Partidos:</div>
+                        <div className="d-flex flex-wrap gap-3">
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle me-2" style={{
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#0056A8'
+                            }}></div>
+                            <span className="small">PP</span>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle me-2" style={{
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#E30613'
+                            }}></div>
+                            <span className="small">PSOE</span>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle me-2" style={{
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#63BE21'
+                            }}></div>
+                            <span className="small">VOX</span>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle me-2" style={{
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#EA5F94'
+                            }}></div>
+                            <span className="small">SUMAR</span>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle me-2" style={{
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#FFB232'
+                            }}></div>
+                            <span className="small">ERC</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="col-12 col-md-4">
+                      <div className="small text-muted text-md-end">
+                        <div><span className="fw-medium">Municipios mostrados:</span> {filteredMapData.length.toLocaleString()}</div>
+                        <div><span className="fw-medium">Partidos diferentes:</span> {
+                          Array.from(new Set(filteredMapData.map(d => d.partido_ganador))).length
+                        }</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="row mt-2 pt-2 border-top">
+                    <div className="col-12">
+                      <div className="small text-muted">
+                        💡 <strong>Consejos:</strong> Haz clic en cualquier municipio para ver detalles completos. 
+                        Los clusters (números) agrupan municipios cercanos - haz clic para expandirlos.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -459,7 +593,7 @@ function ElectionDatasetView() {
       {activeTab === 'party' && <ElectionPartyView />}
 
       {/* TAB: TABLA */}
-      {activeTab === 'data' && <ElectionTable filters={filters} />}
+      {activeTab === 'data' && <ElectionTable />}
     </>
   );
 }

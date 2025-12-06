@@ -24,7 +24,7 @@ interface ElectionData {
 }
 
 interface ElectionTableProps {
-  filters?: any;
+  // Opcional: si quieres pasar filtros desde el padre
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -54,7 +54,7 @@ const partyTranslations: Record<string, string> = {
   'sin_datos': 'Sin Datos'
 };
 
-export default function ElectionTable({ filters }: ElectionTableProps) {
+export default function ElectionTable({}: ElectionTableProps) {
   const [data, setData] = useState<ElectionData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -84,8 +84,7 @@ export default function ElectionTable({ filters }: ElectionTableProps) {
         params: {
           limit: ITEMS_PER_PAGE,
           offset: offset,
-          light: false, // Necesitamos datos completos para la tabla
-          ...filters
+          light: false // Necesitamos datos completos para la tabla
         },
         signal: abortControllerRef.current.signal
       });
@@ -104,7 +103,7 @@ export default function ElectionTable({ filters }: ElectionTableProps) {
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, offset, filters]);
+  }, [loading, hasMore, offset]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {
@@ -129,15 +128,10 @@ export default function ElectionTable({ filters }: ElectionTableProps) {
     };
   }, [hasMore, loading, loadMoreData]);
 
-  // Resetear datos cuando cambien filtros
+  // Cargar datos iniciales
   useEffect(() => {
-    setData([]);
-    setOffset(0);
-    setHasMore(true);
-    
-    // Cargar primera página automáticamente
     loadMoreData();
-  }, [filters]);
+  }, []);
 
   // Ordenar datos
   const handleSort = (field: keyof ElectionData) => {
