@@ -1,7 +1,7 @@
 # backend/app/routers/covid.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Date, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Date, TIMESTAMP, text
 from sqlalchemy.sql import func
 from typing import Optional
 from datetime import date
@@ -9,7 +9,7 @@ import json
 from geoalchemy2 import Geometry
 from app.database import get_db, Base
 
-# MODELO COVID DENTRO DEL MISMO ARCHIVO
+# MODELO COVID
 class CovidCase(Base):
     __tablename__ = "covid_cases"
     
@@ -24,55 +24,227 @@ class CovidCase(Base):
     geom = Column(Geometry('POINT', srid=4326), index=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-    
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "fecha": str(self.fecha),
-            "comunidad": self.comunidad_autonoma,
-            "provincia": self.provincia,
-            "casos": self.casos_confirmados,
-            "ingresos_uci": self.ingresos_uci,
-            "fallecidos": self.fallecidos,
-            "altas": self.altas,
-            "lat": None,
-            "lon": None
-        }
 
 # ROUTER
 router = APIRouter(prefix="/api", tags=["covid"])
 
-# ENDPOINTS (exactamente igual que antes)
 @router.get("/covid/data")
-async def get_covid_data(db: Session = Depends(get_db)):
-    """Obtener todos los datos COVID"""
+async def get_covid_data(
+    comunidad: Optional[str] = Query(None, description="Comunidad autónoma"),
+    provincia: Optional[str] = Query(None, description="Provincia"),
+    fecha_inicio: Optional[date] = Query(None, description="Fecha inicio"),
+    fecha_fin: Optional[date] = Query(None, description="Fecha fin"),
+    min_casos: Optional[int] = Query(None, ge=0, description="Casos mínimos"),
+    max_casos: Optional[int] = Query(None, ge=0, description="Casos máximos"),
+    limit: Optional[int] = Query(100, ge=1, le=10000, description="Límite de resultados"),
+    offset: Optional[int] = Query(0, ge=0, description="Offset para paginación"),
+    light: Optional[bool] = Query(False, description="Modo ligero (solo coords + casos)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener datos COVID con filtros
+    
+    **Modo light=true**: Solo coordenadas, comunidad, casos, fecha (para mapas)
+    **Modo light=false**: Todos los datos completos
+    """
     try:
-        cases = db.query(CovidCase).order_by(CovidCase.fecha, CovidCase.comunidad_autonoma).all()
+        # Query base según modo
+        if light:
+            # Modo ligero - optimizado con ST_AsGeoJSON
+            query = """
+                SELECT 
+                    id,
+                    fecha,
+                    comunidad_autonoma,
+                    provincia,
+                    casos_confirmados,
+                    ST_X(geom::geometry) as lon,
+                    ST_Y(geom::geometry) as lat
+                FROM covid_cases
+                WHERE 1=1
+            """
+        else:
+            # Modo completo
+            query = """
+                SELECT 
+                    id,
+                    fecha,
+                    comunidad_autonoma,
+                    provincia,
+                    casos_confirmados,
+                    ingresos_uci,
+                    fallecidos,
+                    altas,
+                    ST_X(geom::geometry) as lon,
+                    ST_Y(geom::geometry) as lat
+                FROM covid_cases
+                WHERE 1=1
+            """
         
-        result = []
-        for case in cases:
-            point_data = db.scalar(case.geom.ST_AsGeoJSON())
-            if point_data:
-                coords = json.loads(point_data)["coordinates"]
-                lon, lat = coords[0], coords[1]
-            else:
-                lat, lon = None, None
-            
-            result.append({
-                "fecha": str(case.fecha),
-                "comunidad": case.comunidad_autonoma,
-                "provincia": case.provincia,
-                "casos": case.casos_confirmados,
-                "ingresos_uci": case.ingresos_uci,
-                "fallecidos": case.fallecidos,
-                "altas": case.altas,
-                "lat": lat,
-                "lon": lon
-            })
+        params = {}
         
-        return {"data": result}
+        # Aplicar filtros
+        if comunidad and comunidad != "todas":
+            query += " AND comunidad_autonoma ILIKE :comunidad"
+            params['comunidad'] = f"%{comunidad}%"
+        
+        if provincia and provincia != "todas":
+            query += " AND provincia ILIKE :provincia"
+            params['provincia'] = f"%{provincia}%"
+        
+        if fecha_inicio:
+            query += " AND fecha >= :fecha_inicio"
+            params['fecha_inicio'] = fecha_inicio
+        
+        if fecha_fin:
+            query += " AND fecha <= :fecha_fin"
+            params['fecha_fin'] = fecha_fin
+        
+        if min_casos is not None:
+            query += " AND casos_confirmados >= :min_casos"
+            params['min_casos'] = min_casos
+        
+        if max_casos is not None:
+            query += " AND casos_confirmados <= :max_casos"
+            params['max_casos'] = max_casos
+        
+        query += " ORDER BY fecha, comunidad_autonoma LIMIT :limit OFFSET :offset"
+        params['limit'] = limit
+        params['offset'] = offset
+        
+        result = db.execute(text(query), params)
+        rows = result.fetchall()
+        
+        # Convertir según modo
+        data = []
+        if light:
+            for row in rows:
+                data.append({
+                    "id": row[0],
+                    "fecha": str(row[1]),
+                    "comunidad": row[2],
+                    "provincia": row[3],
+                    "casos": row[4],
+                    "lon": float(row[5]) if row[5] else None,
+                    "lat": float(row[6]) if row[6] else None
+                })
+        else:
+            for row in rows:
+                data.append({
+                    "id": row[0],
+                    "fecha": str(row[1]),
+                    "comunidad": row[2],
+                    "provincia": row[3],
+                    "casos": row[4],
+                    "ingresos_uci": row[5],
+                    "fallecidos": row[6],
+                    "altas": row[7],
+                    "lon": float(row[8]) if row[8] else None,
+                    "lat": float(row[9]) if row[9] else None
+                })
+        
+        # Obtener total para paginación
+        count_query = "SELECT COUNT(*) FROM covid_cases WHERE 1=1"
+        count_params = {}
+        
+        if comunidad and comunidad != "todas":
+            count_query += " AND comunidad_autonoma ILIKE :comunidad"
+            count_params['comunidad'] = f"%{comunidad}%"
+        
+        if provincia and provincia != "todas":
+            count_query += " AND provincia ILIKE :provincia"
+            count_params['provincia'] = f"%{provincia}%"
+        
+        if fecha_inicio:
+            count_query += " AND fecha >= :fecha_inicio"
+            count_params['fecha_inicio'] = fecha_inicio
+        
+        if fecha_fin:
+            count_query += " AND fecha <= :fecha_fin"
+            count_params['fecha_fin'] = fecha_fin
+        
+        if min_casos is not None:
+            count_query += " AND casos_confirmados >= :min_casos"
+            count_params['min_casos'] = min_casos
+        
+        if max_casos is not None:
+            count_query += " AND casos_confirmados <= :max_casos"
+            count_params['max_casos'] = max_casos
+        
+        total_result = db.execute(text(count_query), count_params)
+        total = total_result.scalar()
+        
+        return {
+            "success": True,
+            "data": data,
+            "count": len(data),
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": (offset + len(data)) < total,
+            "light_mode": light
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener datos: {str(e)}")
+
+
+@router.get("/covid/case/{case_id}")
+async def get_covid_case_detail(
+    case_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener datos completos de un caso COVID específico
+    """
+    try:
+        query = """
+            SELECT 
+                id,
+                fecha,
+                comunidad_autonoma,
+                provincia,
+                casos_confirmados,
+                ingresos_uci,
+                fallecidos,
+                altas,
+                ST_X(geom::geometry) as lon,
+                ST_Y(geom::geometry) as lat,
+                created_at
+            FROM covid_cases
+            WHERE id = :case_id
+        """
+        
+        result = db.execute(text(query), {"case_id": case_id})
+        row = result.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Caso {case_id} no encontrado")
+        
+        data = {
+            "id": row[0],
+            "fecha": str(row[1]),
+            "comunidad": row[2],
+            "provincia": row[3],
+            "casos": row[4],
+            "ingresos_uci": row[5],
+            "fallecidos": row[6],
+            "altas": row[7],
+            "lon": float(row[8]) if row[8] else None,
+            "lat": float(row[9]) if row[9] else None,
+            "created_at": row[10].isoformat() if row[10] else None
+        }
+        
+        return {
+            "success": True,
+            "data": data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener caso: {str(e)}")
+
 
 @router.get("/covid/stats")
 async def get_covid_stats(db: Session = Depends(get_db)):
@@ -84,13 +256,6 @@ async def get_covid_stats(db: Session = Depends(get_db)):
             func.sum(CovidCase.fallecidos).label("total_fallecidos"),
             func.avg(CovidCase.casos_confirmados).label("promedio_diario")
         ).group_by(CovidCase.comunidad_autonoma).all()
-        
-        total_por_provincia = db.query(
-            CovidCase.provincia,
-            CovidCase.comunidad_autonoma,
-            func.sum(CovidCase.casos_confirmados).label("total_casos"),
-            func.sum(CovidCase.fallecidos).label("total_fallecidos")
-        ).group_by(CovidCase.provincia, CovidCase.comunidad_autonoma).all()
 
         totals = db.query(
             func.sum(CovidCase.casos_confirmados).label("total_casos"),
@@ -109,15 +274,6 @@ async def get_covid_stats(db: Session = Depends(get_db)):
                 }
                 for r in total_por_comunidad
             ],
-            "por_provincia": [
-                {
-                    "provincia": r.provincia,
-                    "comunidad": r.comunidad_autonoma,
-                    "total_casos": int(r.total_casos),
-                    "total_fallecidos": int(r.total_fallecidos)
-                }
-                for r in total_por_provincia
-            ],
             "totales": {
                 "total_casos": int(totals.total_casos) if totals.total_casos else 0,
                 "total_fallecidos": int(totals.total_fallecidos) if totals.total_fallecidos else 0,
@@ -127,6 +283,7 @@ async def get_covid_stats(db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al calcular estadísticas: {str(e)}")
+
 
 @router.get("/covid/filter")
 async def filter_covid_data(
@@ -138,60 +295,20 @@ async def filter_covid_data(
     min_casos: Optional[int] = Query(None, ge=0),
     max_casos: Optional[int] = Query(None, ge=0)
 ):
-    """Filtrar datos COVID con múltiples parámetros"""
-    try:
-        query = db.query(CovidCase)
-        
-        if comunidad and comunidad != "todas":
-            query = query.filter(CovidCase.comunidad_autonoma.ilike(f"%{comunidad}%"))
-        
-        if provincia and provincia != "todas":
-            query = query.filter(CovidCase.provincia.ilike(f"%{provincia}%"))
-
-        if fecha_inicio:
-            query = query.filter(CovidCase.fecha >= fecha_inicio)
-        if fecha_fin:
-            query = query.filter(CovidCase.fecha <= fecha_fin)
-        
-        if min_casos:
-            query = query.filter(CovidCase.casos_confirmados >= min_casos)
-        if max_casos:
-            query = query.filter(CovidCase.casos_confirmados <= max_casos)
-        
-        cases = query.order_by(CovidCase.fecha, CovidCase.comunidad_autonoma).all()
-        
-        result = []
-        for case in cases:
-            point_data = db.scalar(case.geom.ST_AsGeoJSON())
-            if point_data:
-                coords = json.loads(point_data)["coordinates"]
-                lon, lat = coords[0], coords[1]
-            else:
-                lat, lon = None, None
-            
-            result.append({
-                "fecha": str(case.fecha),
-                "comunidad": case.comunidad_autonoma,
-                "provincia": case.provincia,
-                "casos": case.casos_confirmados,
-                "ingresos_uci": case.ingresos_uci,
-                "fallecidos": case.fallecidos,
-                "altas": case.altas,
-                "lat": lat,
-                "lon": lon
-            })
-        
-        return {
-            "data": result,
-            "filters_applied": {
-                "comunidad": comunidad,
-                "fecha_inicio": str(fecha_inicio) if fecha_inicio else None,
-                "fecha_fin": str(fecha_fin) if fecha_fin else None,
-                "min_casos": min_casos,
-                "max_casos": max_casos
-            },
-            "count": len(result),
-            "total_casos": sum(c.casos_confirmados for c in cases) if cases else 0
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al filtrar datos: {str(e)}")
+    """
+    Filtrar datos COVID (legacy endpoint - redirige a /covid/data)
+    Mantenido por compatibilidad
+    """
+    # Redirigir al nuevo endpoint optimizado
+    return await get_covid_data(
+        comunidad=comunidad,
+        provincia=provincia,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        min_casos=min_casos,
+        max_casos=max_casos,
+        limit=10000,
+        offset=0,
+        light=False,
+        db=db
+    )

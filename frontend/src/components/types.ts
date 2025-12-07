@@ -1,11 +1,16 @@
 // src/components/types.ts
 export interface CovidLocation {
+  id?: number  // ✅ AÑADIDO para fetch individual
   lat: number
   lon: number
   comunidad: string
   casos: number
   fecha?: string
   provincia?: string
+  ingresos_uci?: number
+  fallecidos?: number
+  altas?: number
+  created_at?: string
 }
 
 export interface WeatherLocation {
