@@ -379,14 +379,13 @@ function CovidDatasetView() {
                         />
                       </div>
 
-                      <div className="col-12 col-md-4 d-flex align-items-end gap-2">
+                      <div className="col-12 col-md-4 d-flex gap-2 align-items-end">
                         <button
-                          className="btn btn-danger flex-grow-1"
+                          className="btn btn-danger"
                           onClick={clearFilters}
                           disabled={isFiltering || !hasActiveFilters}
                         >
-                          <FaTrashAlt className="me-2" />
-                          Limpiar
+                          <FaTrashAlt />                          
                         </button>
                         
                         <button

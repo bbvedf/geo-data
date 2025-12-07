@@ -265,8 +265,7 @@ function WeatherDatasetView() {
                       onClick={clearFilters}
                       disabled={isFiltering || !hasActiveFilters}
                     >
-                      <FaTrashAlt className="me-2" />
-                      Limpiar
+                      <FaTrashAlt />                      
                     </button>
                     
                     <button
