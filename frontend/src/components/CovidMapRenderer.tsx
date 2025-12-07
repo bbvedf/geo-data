@@ -146,7 +146,8 @@ export default function CovidMapRenderer({ map, markers, data }: CovidMapRendere
       const popup = L.popup({
         maxWidth: 300,
         minWidth: 250,
-        autoPan: false
+        autoPan: true,
+        autoPanPadding: [50, 50]
       }).setContent(initialPopup);
 
       circle.bindPopup(popup);

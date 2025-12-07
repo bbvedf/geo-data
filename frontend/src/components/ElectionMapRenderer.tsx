@@ -236,7 +236,8 @@ export default function ElectionMapRenderer({ map, markers, data }: ElectionMapR
         const popup = L.popup({
           maxWidth: 300,
           minWidth: 250,
-          autoPan: false
+          autoPan: true,
+          autoPanPadding: [50, 50]
         }).setContent(initialPopup);
 
         circle.bindPopup(popup);
