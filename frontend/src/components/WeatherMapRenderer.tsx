@@ -1,5 +1,5 @@
 // src/components/WeatherMapRenderer.tsx
-import { useEffect, useRef } from 'react'; // AÑADIR
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { WeatherLocation } from './types';
 
@@ -27,13 +27,11 @@ function getWeatherIcon(iconCode: string): string {
 }
 
 export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRendererProps) {
-  const hasSetView = useRef(false); // AÑADIR
+  const hasSetView = useRef(false);
   
-  useEffect(() => { // AÑADIR useEffect
-    // Limpiar marcadores anteriores
+  useEffect(() => {
     markers.clearLayers();
 
-    // Si no hay datos, no hacer nada
     if (!data || data.length === 0) {
       console.log('WeatherMapRenderer: No hay datos');
       return;
@@ -41,10 +39,8 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
 
     console.log(`WeatherMapRenderer: Procesando ${data.length} ubicaciones`);
 
-    // LIMITAR datos si son muchos
     const limitedData = data.length > 1000 ? data.slice(0, 1000) : data;
     
-    // Encontrar min/max temperatura para escala de color
     const temperatures = limitedData.map(d => d.temperature);
     const minTemp = Math.min(...temperatures);
     const maxTemp = Math.max(...temperatures);
@@ -53,7 +49,6 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
     let sinCoordenadas = 0;
 
     limitedData.forEach(location => {
-      // Verificar coordenadas
       if (!location.lat || !location.lon || isNaN(location.lat) || isNaN(location.lon)) {
         sinCoordenadas++;
         return;
@@ -67,10 +62,9 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
       else if (location.temperature >= 15) color = '#f59e0b'; // naranja - templado
       else if (location.temperature >= 5) color = '#28a745'; // verde - fresco
 
-      // Radio basado en temperatura (normalizado)
       const tempRange = maxTemp - minTemp;
       const normalizedTemp = tempRange > 0 ? (location.temperature - minTemp) / tempRange : 0.5;
-      const radius = Math.min(normalizedTemp * 15 + 8, 20); // Máximo 20px
+      const radius = Math.min(normalizedTemp * 15 + 8, 20);
 
       const circle = L.circleMarker([location.lat, location.lon], {
         radius,
@@ -81,10 +75,15 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
         fillOpacity: 0.7,
       });
 
-      // Icono del tiempo
       const weatherIcon = getWeatherIcon(location.weather_icon);
       
-      circle.bindPopup(`
+      // ✅ AÑADIR autoPan aquí
+      const popup = L.popup({
+        maxWidth: 300,
+        minWidth: 220,
+        autoPan: true,           // ✅ Mueve el mapa automáticamente
+        autoPanPadding: [50, 50] // ✅ Margen desde los bordes
+      }).setContent(`
         <div style="padding: 10px; min-width: 220px;">
           <div style="display: flex; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 1.5rem; margin-right: 10px;">${weatherIcon}</span>
@@ -126,22 +125,21 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
         </div>
       `);
 
+      circle.bindPopup(popup);
       circle.addTo(markers);
     });
 
-    // Ajustar vista SOLO UNA VEZ
     if (bounds.length > 0 && !hasSetView.current) {
       setTimeout(() => {
         const latLngBounds = L.latLngBounds(bounds);
         map.fitBounds(latLngBounds.pad(0.1), {
-          animate: false, // Sin animación para evitar bucle
+          animate: false,
           duration: 0
         });
         hasSetView.current = true;
       }, 100);
     }
 
-    // Debug
     if (sinCoordenadas > 0) {
       console.warn(`${sinCoordenadas} ubicaciones de clima sin coordenadas válidas fueron omitidas`);
     }
@@ -151,11 +149,10 @@ export default function WeatherMapRenderer({ map, markers, data }: WeatherMapRen
     }
 
     return () => {
-      // Limpieza al desmontar
       markers.clearLayers();
       hasSetView.current = false;
     };
-  }, [map, markers, data]); // Dependencias
+  }, [map, markers, data]);
 
   return null;
 }
