@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import './index.css';
-import { Header, DashboardView, CovidDatasetView, ThemeMenu, DatasetNotFoundView, WeatherDatasetView, ElectionDatasetView } from './components';
+import { Header, DashboardView, CovidDatasetView, ThemeMenu, DatasetNotFoundView, WeatherDatasetView, ElectionDatasetView, AirQualityDatasetView } from './components';
 
 
 function App() {
@@ -28,6 +28,7 @@ function App() {
           <Route path="/dataset/covid" element={<CovidDatasetView />} />
           <Route path="/dataset/weather" element={<WeatherDatasetView />} />
           <Route path="/dataset/elections" element={<ElectionDatasetView />} />
+          <Route path="/dataset/airquality" element={<AirQualityDatasetView />} />
           {/* <Route path="/dataset/housing-prices" element={<HousingDatasetView />} /> */}
           <Route path="/dataset/:datasetId" element={<DatasetNotFoundView />} />
         </Routes>

@@ -21,6 +21,7 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Vistas específicas por dataset:** Mapa, Gráficos y Datos en tabs
 - **Datos COVID España:** 4,680 registros (19 CCAA × 90 días × provincias)
 - **Datos Clima España:** Condiciones meteorológicas en tiempo real de ciudades españolas
+- **Datos Calidad Aire España:** Mapa de calidad del aire en tiempo real de ciudades españolas
 - **Backend FastAPI:** Con filtros avanzados y estadísticas
 - **Frontend React:** TypeScript, Bootstrap 5, Leaflet, Recharts
 
@@ -29,6 +30,7 @@ Aplicación de visualización geoespacial y análisis temporal.
 1. **COVID España** - Casos por comunidad autónoma y provincia (2023)
 2. **Clima España** - Condiciones meteorológicas actuales en ciudades españolas (OpenWeatherMap)
 3. **Elecciones** - Resultados municipales 2023
+3. **Calidad del Aire España** - Mapa de calidad del aire actual en ciudades españolas (discomap.eea.europa.eu)
 
 
 ## 🛠️ TECNOLOGÍAS  
@@ -118,6 +120,10 @@ geo-data/
 - `GET /api/elections/data` - Resultados electorales  
 - `GET /api/elections/stats` - Estadísticas electorales  
 - `GET /api/elections/party/{partido}` - Resultados por partido  
+- `GET /air-quality/stations` - Obtiene estaciones de calidad del aire en España  
+- `GET /air-quality/station/{station_id}"` - Obtener datos completos de una estación específica  
+- `GET /air-quality/stats"` - Estadísticas de calidad del aire en España  
+- `GET /air-quality/pollutants` - Información sobre los contaminantes medidos  
 - `GET /api/analysis/summary` - Análisis básico  
 - `GET /api/docs` - Swagger UI interactivo  
 

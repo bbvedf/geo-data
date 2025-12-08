@@ -78,6 +78,17 @@ const ThemeMenu = ({ theme, setTheme }: ThemeMenuProps) => {
           <button 
             className={styles.menuItem}
             onClick={() => {
+              navigate('/dataset/airquality');
+              setIsOpen(false);
+            }}
+          >
+            <i className="bi bi-wind"></i>
+            Calidad del Aire
+          </button>
+
+          <button 
+            className={styles.menuItem}
+            onClick={() => {
               // navigate('/dataset/housing-prices'); // Descomentar cuando exista
               setIsOpen(false);
             }}

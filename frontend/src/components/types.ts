@@ -58,8 +58,33 @@ export interface ElectionLocation {
   created_at?: string
 }
 
-export type MapDataType = CovidLocation | WeatherLocation | ElectionLocation;
-export type MapType = 'covid' | 'weather' | 'elections';
+// ✅ AÑADIDO: Interface para calidad del aire
+export interface AirQualityStation {
+  id: number
+  station_code: string
+  eoi_code: string
+  name: string
+  country_code: string
+  country: string
+  station_class: number
+  lat: number
+  lon: number
+  available_pollutants: string[]
+  
+  // Campos opcionales (solo en datos completos)
+  last_measurement?: number
+  last_aqi?: number
+  pollutant?: string
+  unit?: string
+  quality_text?: string
+  quality_color?: string
+  recommendation?: string
+  last_updated?: string
+  is_mock?: boolean
+}
+
+export type MapDataType = CovidLocation | WeatherLocation | ElectionLocation | AirQualityStation;
+export type MapType = 'covid' | 'weather' | 'elections' | 'air-quality';
 
 // Type guards
 export function isWeatherData(data: MapDataType[]): data is WeatherLocation[] {
@@ -72,4 +97,8 @@ export function isCovidData(data: MapDataType[]): data is CovidLocation[] {
 
 export function isElectionData(data: MapDataType[]): data is ElectionLocation[] {
   return data.length > 0 && 'partido_ganador' in data[0]
+}
+
+export function isAirQualityData(data: MapDataType[]): data is AirQualityStation[] {
+  return data.length > 0 && 'last_aqi' in data[0]
 }

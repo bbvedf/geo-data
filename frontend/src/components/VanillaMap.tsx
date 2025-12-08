@@ -4,10 +4,12 @@ import MapBase from './MapBase';
 import CovidMapRenderer from './CovidMapRenderer';
 import WeatherMapRenderer from './WeatherMapRenderer';
 import ElectionMapRenderer from './ElectionMapRenderer';
+import AirQualityMapRenderer from './AirQualityMapRenderer';
 import { 
   isCovidData, 
   isWeatherData, 
   isElectionData, 
+  isAirQualityData,
   MapDataType, 
   MapType 
 } from './types';
@@ -121,6 +123,19 @@ export default function VanillaMap({ data, height = '500px', type = 'auto' }: Va
             );
           }
           break;
+
+          case 'air-quality':
+            if (isAirQualityData(processedData)) {
+              return (
+                <AirQualityMapRenderer 
+                  key="air-quality-renderer"
+                  map={mapInstance} 
+                  markers={markersInstance} 
+                  data={processedData} 
+                />
+              );
+            }
+            break;
       }
     } catch (error) {
       console.error('Error renderizando mapa:', error);

@@ -10,6 +10,7 @@ import pandas as pd
 from app.routers.covid import router as covid_router
 from app.routers.weather import router as weather_router
 from app.routers.elections import router as elections_router
+from .routers import air_quality_router
 
 app = FastAPI(
     title="Geo-Data API",
@@ -32,6 +33,7 @@ app.add_middleware(
 app.include_router(covid_router)
 app.include_router(weather_router)
 app.include_router(elections_router)
+app.include_router(air_quality_router)
 
 # Endpoints generales (comunes a todos)
 @app.get("/")
@@ -68,7 +70,7 @@ async def get_datasets():
         {"id": "covid", "name": "COVID España", "type": "geo-temporal"},
         {"id": "weather", "name": "Clima España", "type": "geo-temporal"},
         {"id": "elections", "name": "Resultados Electorales", "type": "geo"},
-        {"id": "housing-prices", "name": "Precios Vivienda", "type": "geo-temporal"}
+        {"id": "airquality", "name": "Calidad del Aire", "type": "geo-temporal"}
     ]
     return {"datasets": datasets}
 
