@@ -242,11 +242,8 @@ function CovidDatasetView() {
             {/* FILTROS */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className="card border-primary">
-                  <div className="card-header" style={{ 
-                    backgroundColor: 'var(--color-button-bg)', 
-                    color: 'var(--color-button-text)' 
-                  }}>
+                <div className="card border-primary mb-4 bg-body">
+                  <div className="card-header bg-light">
                     <h3 className="h5 mb-0">
                       🔍 Filtros
                       {isFiltering && <FaSpinner className="ms-2 fa-spin" />}
@@ -389,7 +386,7 @@ function CovidDatasetView() {
                         </button>
                         
                         <button
-                          className="btn btn-primary flex-grow-1"
+                          className="btn btn-primary grow"
                           onClick={applyFilters}
                           disabled={isFiltering}
                         >

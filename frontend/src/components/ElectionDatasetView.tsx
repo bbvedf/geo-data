@@ -464,7 +464,7 @@ function ElectionDatasetView() {
                       <FaTrashAlt />
                     </button>
                     <button
-                      className="btn btn-primary flex-grow-1"
+                      className="btn btn-primary grow"
                       onClick={applyFilters}
                       disabled={isFiltering}
                     >

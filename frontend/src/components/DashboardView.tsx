@@ -67,8 +67,8 @@ const DashboardView = () => {
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           {datasets.map((dataset) => (
             <div key={dataset.id} className="col">
-              <div className="card h-100">
-                <div className="card-body">
+              <div className="card h-100 border-primary">
+                <div className="card-body rounded-4 bg-body">
                   <h5 className="card-title">
                     {dataset.type === 'geo-temporal' ? '🗺️📈 ' : '🗺️ '}
                     {dataset.name}

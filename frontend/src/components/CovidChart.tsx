@@ -1,4 +1,5 @@
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { FaAngleRight } from 'react-icons/fa';
 
 interface DataPoint {
   fecha: string
@@ -44,7 +45,7 @@ export default function CovidChart({ data }: CovidChartProps) {
     <div className="space-y-8">
       {/* Gráfico de líneas */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">📈 Evolución Total de Casos</h3>
+        <h3 className="text-lg font-semibold mb-4"><FaAngleRight /> Evolución Total de Casos</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -61,7 +62,7 @@ export default function CovidChart({ data }: CovidChartProps) {
 
       {/* Gráfico de barras por comunidad */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">📊 Casos por Comunidad</h3>
+        <h3 className="text-lg font-semibold mb-4"><FaAngleRight /> Casos por Comunidad</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={latestData}>
             <CartesianGrid strokeDasharray="3 3" />
