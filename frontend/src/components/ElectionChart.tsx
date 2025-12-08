@@ -127,7 +127,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card border-success">
+          <div className="card border-primary">
             <div className="card-body text-center rounded-4 bg-body">
               <h5 className="card-title text-muted">🗳️ Participación Media</h5>
               <h2 className="text-success">{avgParticipacion.toFixed(1)}%</h2>
@@ -135,7 +135,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card border-info">
+          <div className="card border-primary">
             <div className="card-body text-center rounded-4 bg-body">
               <h5 className="card-title text-muted">🎯 Partidos Ganadores</h5>
               <h2 className="text-info">{Object.keys(ganadoresDist).length}</h2>
@@ -148,7 +148,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
       <div className="row mb-4">
         <div className="col-md-6">
           <div className="card shadow">
-            <div className="card-header bg-primary text-white">
+            <div className="card-header bg-light">
               <h5 className="mb-0">🏆 Distribución de Partidos Ganadores</h5>
             </div>
             <div className="card-body">
@@ -160,7 +160,14 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry: any) => `${entry.name}: ${entry.porcentaje}%`}
+                        label={(entry: any) => (
+                        <text 
+                          fontSize="8px" 
+                          //fill="#333"
+                        >
+                          {`${entry.name}: ${entry.porcentaje}%`}
+                        </text>
+                      )}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -171,7 +178,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: any, _name: any, props: any) => [`${value} municipios (${props.payload.porcentaje}%)`, props.payload.name]} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '8px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -181,7 +188,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
 
         <div className="col-md-6">
           <div className="card shadow">
-            <div className="card-header bg-success text-white">
+            <div className="card-header bg-light">
               <h5 className="mb-0">📊 Participación por Provincia (Top 10)</h5>
             </div>
             <div className="card-body">
@@ -189,10 +196,20 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={participacionByProvincia}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="provincia" angle={-45} textAnchor="end" height={80} interval={0} />
-                    <YAxis label={{ value: '%', angle: -90, position: 'insideLeft' }} />
+                    <XAxis dataKey="provincia" angle={-45} textAnchor="end" height={80} interval={0} tick={{ fontSize: 8 }} />
+                    <YAxis 
+                      label={{ 
+                        value: '%', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        // Reducir tamaño del label del eje Y:
+                        style: { fontSize: '8px' }
+                      }}
+                      // Reducir tamaño de los números del eje Y:
+                      tick={{ fontSize: 8 }}
+                    />
                     <Tooltip formatter={(value: any) => [`${value}%`, 'Participación']} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '8px' }}/>
                     <Bar dataKey="participacion_media" fill="#82ca9d" name="Participación (%)" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -204,7 +221,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
 
       {/* Gráfico de votos por partido */}
       <div className="card shadow mb-4">
-        <div className="card-header bg-info text-white">
+        <div className="card-header bg-light">
           <h5 className="mb-0">📈 Votos Promedio por Partido</h5>
         </div>
         <div className="card-body">
@@ -228,10 +245,12 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
       </div>
 
       {/* Leyenda de colores */}
-      <div className="card mt-4">
-        <div className="card-body">
+      <div className="card mt-4 shadow">
+        <div className="card-header bg-light">
           <h6 className="mb-3">🎨 Leyenda de Partidos Políticos</h6>
-          <div className="row">
+          </div>
+          <div className="card-body bg-body">
+          <div className="row g-2">
             {Object.entries(partyColors).map(([partido, color]) => (
               <div key={partido} className="col-6 col-md-3 mb-2">
                 <div className="d-flex align-items-center">
@@ -248,7 +267,7 @@ const ElectionChart = ({ data }: ElectionChartProps) => {
               </div>
             ))}
           </div>
-        </div>
+          </div>
       </div>
     </div>
   );

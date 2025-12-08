@@ -174,7 +174,7 @@ export default function ElectionTable({}: ElectionTableProps) {
 
   return (
     <div className="card shadow">
-      <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <div className="card-header bg-light d-flex justify-content-between align-items-center">
         <h5 className="mb-0">📊 Datos Electorales - Tabla Completa</h5>
         <span className="badge bg-light text-dark">
           {data.length.toLocaleString()} de {total.toLocaleString()}

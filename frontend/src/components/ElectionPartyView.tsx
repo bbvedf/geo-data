@@ -58,7 +58,7 @@ export default function ElectionPartyView() {
 
   return (
     <div className="card shadow">
-      <div className="card-header" style={{ backgroundColor: currentParty?.color || '#666', color: 'white' }}>
+      <div className="card-header bg-light">
         <h5 className="mb-0">🎯 Análisis por Partido Político</h5>
       </div>
 
@@ -161,7 +161,7 @@ export default function ElectionPartyView() {
             </div>
 
             {/* Tabla de resultados */}
-            <div className="card">
+            <div className="card bg-body">
               <div className="card-header bg-light">
                 <h6 className="mb-0">📋 Detalle por Comunidad</h6>
               </div>

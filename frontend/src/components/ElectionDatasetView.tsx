@@ -306,32 +306,32 @@ function ElectionDatasetView() {
             {stats && (
               <div className="row mb-4">
                 <div className="col-md-3 col-6">
-                  <div className="card border-primary border">
-                    <div className="card-body p-3 text-center">
+                  <div className="card border-primary">
+                    <div className="card-body p-3 text-center rounded-4 bg-body">
                       <div className="text-muted small">Municipios</div>
                       <div className="h4 mb-0 text-primary">{stats.total_municipios.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
                 <div className="col-md-3 col-6">
-                  <div className="card border-success border">
-                    <div className="card-body p-3 text-center">
+                  <div className="card border-primary">
+                    <div className="card-body p-3 text-center rounded-4 bg-body">
                       <div className="text-muted small">Participación</div>
                       <div className="h4 mb-0 text-success">{stats.participacion_media.toFixed(1)}%</div>
                     </div>
                   </div>
                 </div>
                 <div className="col-md-3 col-6">
-                  <div className="card border-warning border">
-                    <div className="card-body p-3 text-center">
+                  <div className="card border-primary">
+                    <div className="card-body p-3 text-center rounded-4 bg-body">
                       <div className="text-muted small">Censo Total</div>
                       <div className="h4 mb-0 text-warning">{(stats.total_censo / 1000000).toFixed(1)}M</div>
                     </div>
                   </div>
                 </div>
                 <div className="col-md-3 col-6">
-                  <div className="card border-info border">
-                    <div className="card-body p-3 text-center">
+                  <div className="card border-primary">
+                    <div className="card-body p-3 text-center rounded-4 bg-body">
                       <div className="text-muted small">Votantes</div>
                       <div className="h4 mb-0 text-info">{(stats.total_votantes / 1000000).toFixed(1)}M</div>
                     </div>
@@ -341,8 +341,8 @@ function ElectionDatasetView() {
             )}
 
             {/* FILTROS */}
-            <div className="card border-primary mb-4">
-              <div className="card-header bg-primary text-white">
+            <div className="card border-primary mb-4 bg-body">
+              <div className="card-header bg-light">
                 <h3 className="h5 mb-0">
                   🔍 Filtros Electorales 
                   {isFiltering && <FaSpinner className="ms-2 fa-spin" />}
@@ -501,7 +501,7 @@ function ElectionDatasetView() {
                   backgroundColor: 'var(--color-card-bg)',
                   color: 'var(--color-text)'
                 }}>
-                  <div className="row align-items-center">
+                  <div className="row bg-light align-items-center">
                     <div className="col-12 col-md-8 mb-3 mb-md-0">
                       <div className="d-flex align-items-center">
                         <div className="fw-medium me-3">🎨 Leyenda Partidos:</div>
@@ -560,7 +560,7 @@ function ElectionDatasetView() {
                     </div>
                   </div>
                   
-                  <div className="row mt-2 pt-2 border-top">
+                  <div className="row mt-2 pt-2">
                     <div className="col-12">
                       <div className="small text-muted">
                         💡 <strong>Consejos:</strong> Haz clic en cualquier municipio para ver detalles completos. 
