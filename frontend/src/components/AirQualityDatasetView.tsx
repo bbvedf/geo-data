@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import VanillaMap from './VanillaMap';
+import { AirQualityStation } from './types';
 import AirQualityChart from './AirQualityChart';
 import { 
   FaFilter, 
@@ -20,30 +21,11 @@ const api = axios.create({
   baseURL: 'http://localhost:8180',
 });
 
-interface AirQualityStationLight {
-  id: number;
-  name: string;
-  lat: number;
-  lon: number;
-  last_aqi?: number;
-  quality_color?: string;
-  pollutant?: string;
-}
+interface AirQualityStationLight extends Pick<AirQualityStation, 
+  'id' | 'name' | 'lat' | 'lon' | 'last_aqi' | 'quality_color' | 'pollutant' | 'station_code' | 'is_active'
+> {};
 
-interface AirQualityStationFull extends AirQualityStationLight {
-  station_code: string;
-  eoi_code: string;
-  country_code: string;
-  country: string;
-  station_class: number;
-  available_pollutants: string[];
-  last_measurement?: number;
-  unit?: string;
-  quality_text?: string;
-  recommendation?: string;
-  last_updated: string;
-  is_mock?: boolean;
-}
+interface AirQualityStationFull extends AirQualityStation {};
 
 interface AirQualityStats {
   pollutant: string;
@@ -66,7 +48,7 @@ function AirQualityDatasetView() {
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [activeTab, setActiveTab] = useState<'map' | 'chart' | 'data'>('map');
-  const [selectedPollutant, setSelectedPollutant] = useState<string>('PM2.5');
+  const [selectedPollutant, setSelectedPollutant] = useState<string>('ALL');
   
   const [filters, setFilters] = useState({
     ciudad: '',
@@ -77,13 +59,71 @@ function AirQualityDatasetView() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Función para filtrar estaciones por contaminante seleccionado
+  const filterStationsByPollutant = useCallback((stations: AirQualityStationLight[], pollutant: string) => {
+    console.log('🔍 Filtrando:', stations.length, 'estaciones por:', pollutant);
+    
+    if (pollutant === 'ALL') {
+      console.log('   → Devolviendo TODAS');
+      return stations;
+    }
+    
+    const filtered = stations.filter(station => {
+      // Para "No definido"
+      if (pollutant === 'SIN_CONTAMINANTE') {
+        const hasNoPollutant = !station.pollutant || station.pollutant === '' || station.pollutant === null;
+        console.log(`   Estación ${station.name}: pollutant="${station.pollutant}" → ${hasNoPollutant ? 'INCLUIR' : 'EXCLUIR'}`);
+        return hasNoPollutant;
+      }
+      
+      // Para contaminantes específicos
+      const matches = station.pollutant === pollutant;
+      console.log(`   Estación ${station.name}: pollutant="${station.pollutant}" === "${pollutant}" → ${matches ? 'INCLUIR' : 'EXCLUIR'}`);
+      return matches;
+    });
+    
+    console.log('   → Resultado:', filtered.length, 'estaciones');
+    if (filtered.length > 0) {
+      console.log('   → Primera estación filtrada:', filtered[0]);
+    }
+    
+    return filtered;
+  }, []);
+
+  const handlePollutantChange = async (pollutant: string) => {
+    console.log('🔄 Cambiando contaminante a:', pollutant);
+    setSelectedPollutant(pollutant);
+    setIsFiltering(true);
+    
+    try {
+      // NOTA: El filtrado de estaciones lo hace el useEffect de abajo
+      // Solo necesitamos recargar stats
+      
+      const statsResponse = await api.get('/api/air-quality/stats', {
+        params: { 
+          contaminante: pollutant === 'ALL' ? 'PM2.5' : pollutant,
+          forzar_mock: false 
+        }
+      });
+      
+      setStats(statsResponse.data);
+      
+    } catch (error) {
+      console.error('Error cambiando contaminante:', error);
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
   // Contaminantes disponibles
   const pollutants = [
-    { value: 'PM2.5', label: 'PM2.5', description: 'Partículas finas < 2.5µm', color: '#ff6b6b' },
-    { value: 'PM10', label: 'PM10', description: 'Partículas < 10µm', color: '#4ecdc4' },
-    { value: 'NO2', label: 'NO₂', description: 'Dióxido de nitrógeno', color: '#45b7d1' },
-    { value: 'O3', label: 'O₃', description: 'Ozono', color: '#96ceb4' },
-    { value: 'SO2', label: 'SO₂', description: 'Dióxido de azufre', color: '#feca57' },
+    { value: 'ALL', label: 'Todos', description: '', color: '#666666' },
+    { value: 'O3', label: 'O₃', description: 'Ozono', color: '#3498db' },
+    { value: 'NO2', label: 'NO₂', description: 'Dióxido de nitrógeno', color: '#e74c3c' },
+    { value: 'PM10', label: 'PM10', description: 'Partículas < 10µm', color: '#2ecc71' },
+    { value: 'PM2.5', label: 'PM2.5', description: 'Partículas finas < 2.5µm', color: '#e67e22' },
+    { value: 'SO2', label: 'SO₂', description: 'Dióxido de azufre', color: '#9b59b6' },
+    { value: 'SIN_CONTAMINANTE', label: 'No definido', description: '', color: '#95a5a6' }
   ];
 
   // Niveles de calidad del aire
@@ -95,7 +135,7 @@ function AirQualityDatasetView() {
     { value: 5, label: 'Extremadamente Mala', color: '#8f3f97'},
   ];
 
-  // ============ CARGA INICIAL (LIGHT MODE) ============
+  // ============ CARGA INICIAL (UNA SOLA VEZ) ============
   useEffect(() => {
     let isMounted = true;
     
@@ -109,19 +149,21 @@ function AirQualityDatasetView() {
         }
         abortControllerRef.current = new AbortController();
 
-        // Cargar datos LIGHT (solo coords + AQI)
+        // Cargar TODAS las estaciones (sin filtro por contaminante)
         const [stationsResponse, statsResponse] = await Promise.all([
           api.get('/api/air-quality/stations', {
             params: { 
-              limite: 500,
-              contaminante: selectedPollutant,
-              con_datos: true,
-              light: true  // ✅ MODO LIGHT
+              limite: 1000,
+              solo_con_datos: false,
+              light: true
             },
             signal: abortControllerRef.current.signal
           }),
           api.get('/api/air-quality/stats', {
-            params: { contaminante: selectedPollutant },
+            params: { 
+              contaminante: 'PM2.5', // Stats iniciales con PM2.5
+              forzar_mock: false 
+            },
             signal: abortControllerRef.current.signal
           })
         ]);
@@ -134,9 +176,15 @@ function AirQualityDatasetView() {
         );
 
         console.log(`✅ Estaciones AirQuality light: ${validStations.length}`);
+        console.log('📊 Ejemplo de estación:', validStations[0]);
         
         setAllStations(validStations);
-        setFilteredStations(validStations);
+        
+        // Filtrar según el contaminante seleccionado inicialmente (ALL)
+        const initiallyFiltered = filterStationsByPollutant(validStations, 'ALL');
+        console.log(`✅ Estaciones inicialmente filtradas: ${initiallyFiltered.length}`);
+        
+        setFilteredStations(initiallyFiltered);
         setStats(statsResponse.data);
 
       } catch (error: any) {
@@ -159,7 +207,24 @@ function AirQualityDatasetView() {
         abortControllerRef.current.abort();
       }
     };
-  }, [selectedPollutant]);
+  }, []); // <-- SOLO UNA VEZ
+
+  // ============ EFECTO PARA FILTRAR CUANDO CAMBIA EL CONTAMINANTE ============
+  useEffect(() => {
+    if (allStations.length === 0) {
+      console.log('⏳ Esperando carga inicial de estaciones...');
+      return;
+    }
+    
+    console.log('🔄 Re-filtrando por cambio de contaminante:', selectedPollutant);
+    console.log('📊 Estaciones disponibles para filtrar:', allStations.length);
+    
+    const filtered = filterStationsByPollutant(allStations, selectedPollutant);
+    console.log(`✅ Filtrado completado: ${filtered.length} estaciones para ${selectedPollutant}`);
+    
+    setFilteredStations(filtered);
+    
+  }, [selectedPollutant, allStations, filterStationsByPollutant]);
 
   // ============ CARGAR DATOS COMPLETOS (PARA GRÁFICOS) ============
   const loadFullData = useCallback(async () => {
@@ -171,9 +236,9 @@ function AirQualityDatasetView() {
       const response = await api.get('/api/air-quality/stations', {
         params: { 
           limite: 500,
-          contaminante: selectedPollutant,
-          con_datos: true,
-          light: false  // ✅ DATOS COMPLETOS
+          contaminante: selectedPollutant === 'ALL' ? 'PM2.5' : selectedPollutant,
+          solo_con_datos: false,
+          light: false
         }
       });
 
@@ -199,7 +264,7 @@ function AirQualityDatasetView() {
     
     setTimeout(() => {
       try {
-        let filtered = [...allStations];
+        let filtered = [...filteredStations]; // Usar filteredStations (ya filtrado por contaminante)
         
         if (filters.ciudad) {
           filtered = filtered.filter(item => 
@@ -218,7 +283,7 @@ function AirQualityDatasetView() {
         }
         
         setFilteredStations(filtered);
-        console.log(`Filtros aplicados: ${filtered.length} estaciones`);
+        console.log(`Filtros manuales aplicados: ${filtered.length} estaciones`);
         
       } catch (error) {
         console.error('Error aplicando filtros:', error);
@@ -226,7 +291,7 @@ function AirQualityDatasetView() {
         setIsFiltering(false);
       }
     }, 100);
-  }, [allStations, filters]);
+  }, [filteredStations, filters]);
 
   // ============ LIMPIAR FILTROS ============
   const clearFilters = () => {
@@ -236,8 +301,12 @@ function AirQualityDatasetView() {
       max_aqi: 5,
       calidad: 'todas',
     });
-    setFilteredStations(allStations);
-    console.log('Filtros limpiados');
+    
+    // Volver al filtrado por contaminante (sin filtros manuales)
+    const filteredByPollutant = filterStationsByPollutant(allStations, selectedPollutant);
+    setFilteredStations(filteredByPollutant);
+    
+    console.log('Filtros manuales limpiados');
   };
 
   const hasActiveFilters = 
@@ -302,16 +371,16 @@ function AirQualityDatasetView() {
                 <div className="col-md-3 col-6">
                   <div className="card border-primary">
                     <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Estaciones</div>
-                      <div className="h4 mb-0 text-success">{stats.total_stations.toLocaleString()}</div>
+                      <div className="text-muted small">Estaciones Totales</div>
+                      <div className="h4 mb-0 text-success">{allStations.length.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
                 <div className="col-md-3 col-6">
                   <div className="card border-primary">
                     <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Con Datos</div>
-                      <div className="h4 mb-0 text-warning">{stats.stations_with_data.toLocaleString()}</div>
+                      <div className="text-muted small">Mostrando</div>
+                      <div className="h4 mb-0 text-warning">{filteredStations.length.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
@@ -319,7 +388,7 @@ function AirQualityDatasetView() {
                   <div className="card border-primary">
                     <div className="card-body p-3 text-center rounded-4 bg-body">
                       <div className="text-muted small">Concentración Media</div>
-                      <div className="h4 mb-0 text-info">{stats.avg_concentration.toFixed(1)} µg/m³</div>
+                      <div className="h4 mb-0 text-info">{stats.avg_concentration.toFixed(1)} ICA</div>
                     </div>
                   </div>
                 </div>
@@ -349,8 +418,9 @@ function AirQualityDatasetView() {
                   {pollutants.map(pollutant => (
                     <button
                       key={pollutant.value}
-                      className={`btn ${selectedPollutant === pollutant.value ? 'btn-success' : 'btn-outline-secondary'}`}
-                      onClick={() => setSelectedPollutant(pollutant.value)}
+                      className={`btn ${selectedPollutant === pollutant.value ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => handlePollutantChange(pollutant.value)}
+                      disabled={isFiltering}
                     >
                       {pollutant.label}
                       <span className="ms-1 small d-none d-md-inline">{pollutant.description}</span>
@@ -388,6 +458,21 @@ function AirQualityDatasetView() {
                         </span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Indicador de filtro por contaminante */}
+                {selectedPollutant !== 'ALL' && (
+                  <div className="alert alert-warning mb-3">
+                    <strong>🌫️ Contaminante filtrado:</strong> {
+                      pollutants.find(p => p.value === selectedPollutant)?.label || selectedPollutant
+                    }
+                    <br/>
+                    <small>
+                      {selectedPollutant === 'SIN_CONTAMINANTE' 
+                        ? 'Mostrando estaciones sin contaminante específico' 
+                        : `Mostrando estaciones que miden ${selectedPollutant}`}
+                    </small>
                   </div>
                 )}
 
@@ -473,6 +558,9 @@ function AirQualityDatasetView() {
                   <span className="text-muted">
                     📊 Mostrando <strong>{filteredStations.length}</strong> de{' '}
                     <strong>{allStations.length}</strong> estaciones
+                    {selectedPollutant !== 'ALL' && (
+                      <span> (filtrado por {selectedPollutant})</span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -480,6 +568,7 @@ function AirQualityDatasetView() {
 
             <p className="text-muted mb-4">
               Mapa interactivo de calidad del aire. Haz clic en cada estación para ver detalles completos.
+              {selectedPollutant === 'ALL' ? ' 🔗 Con clustering activado.' : ' 🔍 Vista detallada sin clustering.'}
             </p>
             
             {/* MAPA */}
@@ -488,6 +577,8 @@ function AirQualityDatasetView() {
                 data={filteredStations as any} 
                 height="600px" 
                 type="air-quality"
+                useClustering={selectedPollutant === 'ALL'}
+                selectedPollutant={selectedPollutant}
                 key={`airquality-${selectedPollutant}-${filteredStations.length}`}
               />
             </div>
@@ -499,18 +590,44 @@ function AirQualityDatasetView() {
                 }}>
               <div className="row">
                 <div className="col-md-8">
-                  <div className="fw-medium mb-2">🎨 Leyenda AQI:</div>
+                  <div className="fw-medium mb-2">🎨 Leyenda:</div>
                   <div className="d-flex flex-wrap gap-3">
-                    {aqiLevels.map(level => (
-                      <div key={level.value} className="d-flex align-items-center">
-                        <div className="rounded-circle me-2" style={{
-                          width: '16px', 
-                          height: '16px', 
-                          backgroundColor: level.color
-                        }}></div>
-                        <span className="small">{level.label}</span>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#3498db'}}></div>
+                      <span className="small">O₃ (Ozono)</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#e74c3c'}}></div>
+                      <span className="small">NO₂</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#2ecc71'}}></div>
+                      <span className="small">PM10</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#e67e22'}}></div>
+                      <span className="small">PM2.5</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#9b59b6'}}></div>
+                      <span className="small">SO₂</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#95a5a6'}}></div>
+                      <span className="small">Sin definir</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div className="me-2">
+                          <div style={{
+                            width: '14px',
+                            height: '14px',
+                            transform: 'rotate(45deg)',
+                            opacity: 0.85,
+                            border: '2px solid rgba(0, 0, 0, 0.85)'
+                          }}></div>
+                        </div>
+                        <span className="small">Estación inactiva</span>
                       </div>
-                    ))}
                   </div>
                 </div>
                 <div className="col-md-4 text-md-end small text-muted">
@@ -587,6 +704,7 @@ function AirQualityDatasetView() {
             <div className="d-flex justify-content-between mb-3">
               <p className="text-muted mb-0">
                 Mostrando {filteredStations.length} estaciones
+                {selectedPollutant !== 'ALL' && ` (filtrado por ${selectedPollutant})`}
               </p>
               <button
                 className="btn btn-sm btn-primary"
@@ -604,6 +722,8 @@ function AirQualityDatasetView() {
                     <th>Estación</th>
                     <th>AQI</th>
                     <th>Calidad</th>
+                    <th>Contaminante</th>
+                    <th>Estado</th>
                     <th>Coordenadas</th>
                   </tr>
                 </thead>
@@ -621,6 +741,16 @@ function AirQualityDatasetView() {
                       </td>
                       <td>
                         {aqiLevels.find(l => l.value === item.last_aqi)?.label || 'Sin datos'}
+                      </td>
+                      <td>
+                        {item.pollutant || 'No definido'}
+                      </td>
+                      <td>
+                        {item.is_active ? (
+                          <span className="badge bg-success">Activa</span>
+                        ) : (
+                          <span className="badge bg-secondary">Inactiva</span>
+                        )}
                       </td>
                       <td className="small">
                         {item.lat?.toFixed(4)}, {item.lon?.toFixed(4)}

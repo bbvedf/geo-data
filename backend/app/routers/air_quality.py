@@ -72,7 +72,17 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
         estaciones_inactivas = 0
         estaciones_sin_indice = 0
         
+        # ===== VARIABLES DE DEBUG =====
+        debug_total = 0
+        debug_activas = 0
+        debug_inactivas = 0
+        debug_filtradas_coords = 0
+        debug_filtradas_otras = 0
+        debug_inactivas_filtradas = []
+        
         for i, row in enumerate(reader):
+            debug_total += 1
+            
             try:
                 # ===== EXTRACCIÓN Y LIMPIEZA DE CAMPOS =====
                 cod_estacion = row.get('cod_estacion', '').strip()
@@ -88,46 +98,58 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                 # ===== VALIDACIONES MÍNIMAS =====
                 if not cod_estacion or not nombre:
                     errores_parseo += 1
+                    debug_filtradas_otras += 1
                     continue
                 
                 # Verificar si está activa
                 activa = activa_str == 'true'
                 if not activa:
                     estaciones_inactivas += 1
-                    continue  # Saltar estaciones inactivas
+                    debug_inactivas += 1
+                    # DEBUG: Registrar inactiva
+                    print(f"📝 DEBUG INACTIVA #{debug_inactivas}: {nombre}")
                 
                 # ===== PARSEAR COORDENADAS =====
                 try:
                     lat = float(latitud_str) if latitud_str else None
                     lon = float(longitud_str) if longitud_str else None
                     
-                    # Validar coordenadas de España
+                    # DEBUG: Mostrar coordenadas de inactivas
+                    if not activa:
+                        print(f"  📍 Coordenadas: {lat}, {lon}")
+                    
+                    # ✅ CORREGIDO: Solo validar que sean números, no el rango
+                    # (Las estaciones de MITECO están todas en España)
                     if not lat or not lon:
                         errores_parseo += 1
+                        debug_filtradas_coords += 1
+                        if not activa:
+                            debug_inactivas_filtradas.append(f"{nombre} - sin coordenadas")
                         continue
                     
-                    if not (35 <= lat <= 44 and -10 <= lon <= 5):
-                        errores_parseo += 1
-                        continue
-                        
+                    # ✅ OPCIÓN: Solo advertencia si están muy fuera
+                    # Pero NO excluir - MITECO solo tiene estaciones españolas
+                    if lat < 20 or lat > 45 or lon < -20 or lon > 5:
+                        print(f"⚠️  Coordenadas sospechosas (pero aceptadas): {lat}, {lon} - {nombre}")
+                    
                 except (ValueError, TypeError):
                     errores_parseo += 1
+                    debug_filtradas_coords += 1
+                    if not activa:
+                        debug_inactivas_filtradas.append(f"{nombre} - error parseo coordenadas")
                     continue
                 
-                # ===== ✅ PARSEAR ÍNDICE (CORREGIDO) =====
+                # ===== PARSEAR ÍNDICE =====
                 indice_ica = None
                 tiene_indice = False
                 
-                # Solo intentar parsear si NO está vacío
                 if indice_str:  
                     try:
                         indice_ica = int(indice_str)
                         tiene_indice = True
                     except ValueError:
-                        # Índice no es un número válido
                         estaciones_sin_indice += 1
                 else:
-                    # Índice vacío (esto es normal para algunas estaciones)
                     estaciones_sin_indice += 1
                 
                 # ===== CONSTRUIR DATO =====
@@ -137,7 +159,7 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                     'tipo': tipo_estacion,
                     'lat': lat,
                     'lon': lon,
-                    'activa': True,
+                    'activa': activa,
                     'fecha': fecha if fecha else datetime.now().isoformat(),
                     'indice_ica': indice_ica,
                     'tiene_indice': tiene_indice,
@@ -146,30 +168,41 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                 }
                 
                 datos.append(dato)
+                if activa:
+                    debug_activas += 1
                 
             except Exception as e:
                 errores_parseo += 1
-                if errores_parseo <= 3:  # Log solo primeros 3 errores
+                debug_filtradas_otras += 1
+                if not activa:
+                    debug_inactivas_filtradas.append(f"{nombre} - error general: {str(e)}")
+                    
+                if errores_parseo <= 3:
                     print(f"⚠️ Error fila {i+2}: {e}")
                 continue
         
-        # ===== ESTADÍSTICAS =====
+        # ===== ESTADÍSTICAS FINALES =====
+        print(f"\n{'='*50}")
         print(f"✅ {len(datos)} estaciones parseadas correctamente")
-        print(f"   - Estaciones inactivas omitidas: {estaciones_inactivas}")
+        print(f"   - Activas: {sum(1 for d in datos if d['activa'])}")
+        print(f"   - Inactivas: {sum(1 for d in datos if not d['activa'])}")
         print(f"   - Estaciones sin índice: {estaciones_sin_indice}")
         print(f"   - Errores de parseo: {errores_parseo}")
         
-        if datos:
-            # Mostrar ejemplos
-            con_indice = [d for d in datos if d['tiene_indice']]
-            sin_indice = [d for d in datos if not d['tiene_indice']]
-            
-            print(f"   - Con índice válido: {len(con_indice)}")
-            print(f"   - Sin índice: {len(sin_indice)}")
-            
-            if con_indice:
-                ejemplo = con_indice[0]
-                print(f"   🔍 Ejemplo: {ejemplo['nombre']} - ICA:{ejemplo['indice_ica']} - {ejemplo['debido_a']}")
+        # ===== DEBUG RESUMEN =====
+        print(f"\n📊 DEBUG DETALLADO:")
+        print(f"   Total filas CSV procesadas: {debug_total}")
+        print(f"   Activas encontradas: {debug_activas}")
+        print(f"   Inactivas encontradas: {debug_inactivas}")
+        print(f"   Filtradas por coordenadas: {debug_filtradas_coords}")
+        print(f"   Filtradas por otros errores: {debug_filtradas_otras}")
+        
+        if debug_inactivas_filtradas:
+            print(f"\n⚠️  Inactivas filtradas ({len(debug_inactivas_filtradas)}):")
+            for item in debug_inactivas_filtradas:
+                print(f"   - {item}")
+        
+        print(f"{'='*50}\n")
         
         return datos
         
@@ -195,7 +228,6 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                 
                 # Determinar si tiene datos válidos
                 tiene_datos_validos = (
-                    dato['activa'] and 
                     dato['tiene_indice'] and 
                     dato['indice_ica'] is not None and
                     dato['indice_ica'] > 0
@@ -230,7 +262,7 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                         'last_updated': dato['fecha'],
                         'is_mock': False,
                         'has_real_data': True,
-                        'is_active': True,
+                        'is_active':  dato['activa'],  # ✅ True/False real
                         'data_source': 'MITECO ICA',
                         'measurement_timestamp': dato['fecha'],
                         'ica_index': dato['indice_ica'],
@@ -260,7 +292,7 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                         'last_updated': dato['fecha'],
                         'is_mock': False,
                         'has_real_data': False,
-                        'is_active': True,
+                        'is_active': dato['activa'],  # ✅ True/False real
                         'data_source': 'MITECO ICA',
                         'measurement_timestamp': dato['fecha']
                     }
@@ -271,19 +303,24 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                 print(f"⚠️ Error procesando estación {dato.get('cod_estacion', 'N/A')}: {e}")
                 continue
         
-        # Estadísticas finales
-        con_datos = sum(1 for e in estaciones if e.get('has_real_data'))
+        # Estadísticas actualizadas
+        activas_con_datos = sum(1 for e in estaciones if e['is_active'] and e['has_real_data'])
+        activas_sin_datos = sum(1 for e in estaciones if e['is_active'] and not e['has_real_data'])
+        inactivas_con_datos = sum(1 for e in estaciones if not e['is_active'] and e['has_real_data'])
+        inactivas_sin_datos = sum(1 for e in estaciones if not e['is_active'] and not e['has_real_data'])
+        
         print(f"📊 Estaciones procesadas:")
         print(f"   - Total: {len(estaciones)}")
-        print(f"   - Con datos válidos: {con_datos}")
-        print(f"   - Sin datos: {len(estaciones) - con_datos}")
+        print(f"   - Activas con datos: {activas_con_datos}")
+        print(f"   - Activas sin datos: {activas_sin_datos}")
+        print(f"   - Inactivas con datos: {inactivas_con_datos}")
+        print(f"   - Inactivas sin datos: {inactivas_sin_datos}")
         
         return estaciones
         
     except Exception as e:
         print(f"❌ Error convirtiendo a estaciones: {e}")
         return []
-
 
 def obtener_datos_mock(limite: int = 100) -> List[Dict]:
     """Datos mock para desarrollo/fallback"""
@@ -417,7 +454,8 @@ async def get_stations(
                     'last_aqi': e.get('last_aqi', 0),
                     'quality_color': e.get('quality_color', '#cccccc'),
                     'pollutant': e.get('pollutant', contaminante),
-                    'station_code': e['station_code']
+                    'station_code': e['station_code'],
+                    'is_active': e.get('is_active', True)
                 }
                 for e in estaciones_paginadas
             ]

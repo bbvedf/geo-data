@@ -1,4 +1,4 @@
-// src/components/VanillaMap.tsx
+// /home/bbvedf/prog/geo-data/frontend/src/components/VanillaMap.tsx
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MapBase from './MapBase';
 import CovidMapRenderer from './CovidMapRenderer';
@@ -11,7 +11,8 @@ import {
   isElectionData, 
   isAirQualityData,
   MapDataType, 
-  MapType 
+  MapType,
+  AirQualityStation 
 } from './types';
 import L from 'leaflet';
 
@@ -19,10 +20,19 @@ interface VanillaMapProps {
   data: MapDataType[];
   height?: string;
   type?: MapType | 'auto';
+  // Nuevas props específicas para calidad del aire
+  useClustering?: boolean;
+  selectedPollutant?: string;
 }
 
 // Componente memoizado para evitar re-renders innecesarios
-export default function VanillaMap({ data, height = '500px', type = 'auto' }: VanillaMapProps) {
+export default function VanillaMap({ 
+  data, 
+  height = '500px', 
+  type = 'auto',
+  useClustering = true,
+  selectedPollutant = 'ALL'
+}: VanillaMapProps) {
   const [mapReady, setMapReady] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [markersInstance, setMarkersInstance] = useState<L.LayerGroup | null>(null);
@@ -35,6 +45,7 @@ export default function VanillaMap({ data, height = '500px', type = 'auto' }: Va
     const firstItem = data[0];
     if ('temperature' in firstItem) return 'weather';
     if ('partido_ganador' in firstItem) return 'elections';
+    if ('station_code' in firstItem) return 'air-quality';
     return 'covid';
   }, [type, data]);
 
@@ -124,18 +135,25 @@ export default function VanillaMap({ data, height = '500px', type = 'auto' }: Va
           }
           break;
 
-          case 'air-quality':
-            if (isAirQualityData(processedData)) {
-              return (
-                <AirQualityMapRenderer 
-                  key="air-quality-renderer"
-                  map={mapInstance} 
-                  markers={markersInstance} 
-                  data={processedData} 
-                />
-              );
-            }
-            break;
+        case 'air-quality':
+          if (isAirQualityData(processedData)) {
+            // Determinar automáticamente si usar clustering
+            const shouldCluster = useClustering && selectedPollutant === 'ALL';
+            
+            console.log(`AirQuality config: clustering=${shouldCluster}, pollutant=${selectedPollutant}`);
+            
+            return (
+              <AirQualityMapRenderer 
+                key={`air-quality-renderer-${selectedPollutant}-${shouldCluster}`}
+                map={mapInstance} 
+                markers={markersInstance} 
+                data={processedData as AirQualityStation[]}
+                useClustering={shouldCluster}
+                selectedPollutant={selectedPollutant}
+              />
+            );
+          }
+          break;
       }
     } catch (error) {
       console.error('Error renderizando mapa:', error);
@@ -143,7 +161,7 @@ export default function VanillaMap({ data, height = '500px', type = 'auto' }: Va
     }
 
     return null;
-  }, [shouldRender, dataType, processedData, mapInstance, markersInstance]);
+  }, [shouldRender, dataType, processedData, mapInstance, markersInstance, useClustering, selectedPollutant]);
 
   return (
     <div style={{ position: 'relative', height, width: '100%' }}>

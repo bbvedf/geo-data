@@ -58,7 +58,7 @@ export interface ElectionLocation {
   created_at?: string
 }
 
-// ✅ AÑADIDO: Interface para calidad del aire
+// ✅ Interface completa para calidad del aire
 export interface AirQualityStation {
   id: number
   station_code: string
@@ -67,11 +67,12 @@ export interface AirQualityStation {
   country_code: string
   country: string
   station_class: number
+  station_type: string  // ✅ AÑADIDO: TRAFICO, INDUSTRIAL, FONDO
   lat: number
   lon: number
   available_pollutants: string[]
   
-  // Campos opcionales (solo en datos completos)
+  // Campos de medición
   last_measurement?: number
   last_aqi?: number
   pollutant?: string
@@ -79,8 +80,21 @@ export interface AirQualityStation {
   quality_text?: string
   quality_color?: string
   recommendation?: string
-  last_updated?: string
+  last_updated: string
+  
+  // Campos de estado
   is_mock?: boolean
+  has_real_data?: boolean
+  is_active?: boolean  // ✅ AÑADIDO: true/false
+  
+  // Campos específicos MITECO
+  data_source?: string
+  measurement_timestamp?: string
+  ica_index?: number
+  ica_contaminant?: string
+  
+  // Para modo light (opcional)
+  station_code_short?: string
 }
 
 export type MapDataType = CovidLocation | WeatherLocation | ElectionLocation | AirQualityStation;
@@ -100,5 +114,5 @@ export function isElectionData(data: MapDataType[]): data is ElectionLocation[] 
 }
 
 export function isAirQualityData(data: MapDataType[]): data is AirQualityStation[] {
-  return data.length > 0 && 'last_aqi' in data[0]
+  return data.length > 0 && 'station_code' in data[0]
 }
