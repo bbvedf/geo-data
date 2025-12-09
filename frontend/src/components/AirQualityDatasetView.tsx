@@ -339,7 +339,7 @@ function AirQualityDatasetView() {
 
             {/* Selector de contaminante */}
             <div className="card border-primary mb-4 bg-body">
-              <div className="card-header bg-primary text-white">
+              <div className="card-header bg-light">
                 <h3 className="h5 mb-0">
                   <FaSmog className="me-2" /> Contaminante Principal
                 </h3>
@@ -361,8 +361,8 @@ function AirQualityDatasetView() {
             </div>
 
             {/* FILTROS */}
-            <div className="card border-warning mb-4 bg-body">
-              <div className="card-header bg-warning text-dark">
+            <div className="card border-primary mb-4 bg-body">
+              <div className="card-header bg-light">
                 <h3 className="h5 mb-0">
                   <FaFilter className="me-2" /> Filtros
                   {isFiltering && <FaSpinner className="ms-2 fa-spin" />}
@@ -456,8 +456,7 @@ function AirQualityDatasetView() {
                       onClick={clearFilters}
                       disabled={!hasActiveFilters}
                     >
-                      <FaTrashAlt className="me-2" />
-                      Limpiar
+                      <FaTrashAlt className="me-2" />                      
                     </button>
                     <button
                       className="btn btn-primary"
@@ -494,7 +493,10 @@ function AirQualityDatasetView() {
             </div>
 
             {/* LEYENDA */}
-            <div className="p-3 rounded border">
+            <div className="p-3 rounded border" style={{ 
+                  backgroundColor: 'var(--color-card-bg)',
+                  color: 'var(--color-text)'
+                }}>
               <div className="row">
                 <div className="col-md-8">
                   <div className="fw-medium mb-2">🎨 Leyenda AQI:</div>
@@ -512,7 +514,7 @@ function AirQualityDatasetView() {
                   </div>
                 </div>
                 <div className="col-md-4 text-md-end small text-muted">
-                  <div>Fuente: Agencia Europea Medio Ambiente</div>
+                  <div>Fuente: MITECO - Ministerio para la Transición Ecológica</div>
                   {stats?.is_mock_data && (
                     <div className="text-warning">
                       <FaExclamationTriangle className="me-1" /> Datos simulados

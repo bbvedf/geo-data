@@ -62,6 +62,9 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
   // Colores para niveles AQI
   const AQI_COLORS = ['#00e400', '#feca57', '#ff7e00', '#ff0000', '#8f3f97'];
   
+  // Color para "Sin datos"
+  const NO_DATA_COLOR = '#CCCCCC';
+  
   // Colores para contaminantes
   const POLLUTANT_COLORS: Record<string, string> = {
     'PM2.5': '#ff6b6b',
@@ -79,7 +82,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
     'Moderada': 'Moderada',
     'Mala': 'Mala',
     'Muy Mala': 'Muy Mala',
-    'Extremadamente Mala': 'Extremadamente Mala'
+    'Extremadamente Mala': 'Extremadamente Mala',
+    'Sin datos': 'Sin datos'
   };
 
   if (!data || data.length === 0) {
@@ -90,10 +94,10 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
     );
   }
 
-  // Preparar datos para grÃ¡ficos
+  // Preparar datos para gráficos
   const stationsWithData = data.filter(item => item.last_measurement !== undefined);
   
-  // Datos para grÃ¡fico de barras por estación (top 15)
+  // Datos para gráfico de barras por estación (top 15)
   const topStationsData = [...stationsWithData]
     .sort((a, b) => (b.last_measurement || 0) - (a.last_measurement || 0))
     .slice(0, 15)
@@ -106,9 +110,9 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       fullName: item.name
     }));
 
-  // Datos para grÃ¡fico de distribución AQI
+  // Datos para gráfico de distribución AQI
   const aqiDistributionData = Object.entries(
-    stationsWithData.reduce((acc: Record<string, number>, item) => {
+    data.reduce((acc: Record<string, number>, item) => {
       const quality = item.quality_text || 'Sin datos';
       acc[quality] = (acc[quality] || 0) + 1;
       return acc;
@@ -116,26 +120,28 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
   ).map(([quality, count]) => ({
     name: aqiTranslations[quality] || quality,
     value: count,
-    color: AQI_COLORS[
-      quality === 'Buena' ? 0 :
-      quality === 'Moderada' ? 1 :
-      quality === 'Mala' ? 2 :
-      quality === 'Muy Mala' ? 3 :
-      quality === 'Extremadamente Mala' ? 4 : 0
-    ]
+    color: quality === 'Sin datos' ? NO_DATA_COLOR : (
+      AQI_COLORS[
+        quality === 'Buena' ? 0 :
+        quality === 'Moderada' ? 1 :
+        quality === 'Mala' ? 2 :
+        quality === 'Muy Mala' ? 3 :
+        quality === 'Extremadamente Mala' ? 4 : 0
+      ]
+    )
   }));
 
   // Datos para scatter plot (concentración vs calidad)
   const scatterData = stationsWithData.map(item => ({
     x: item.last_measurement || 0,
     y: item.last_aqi || 0,
-    z: 20, // TamaÃ±o fijo para los puntos
+    z: 20, // Tamaño fijo para los puntos
     name: item.name,
     quality: item.quality_text,
     color: AQI_COLORS[(item.last_aqi || 1) - 1]
   }));
 
-  // Calcular estadÃ­sticas adicionales
+  // Calcular estadísticas adicionales
   const concentrations = stationsWithData.map(item => item.last_measurement || 0);
   //const aqis = stationsWithData.map(item => item.last_aqi || 0);
   
@@ -154,6 +160,24 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       return acc;
     }, {})
   ).map(([className, count]) => ({ name: className, value: count }));
+
+  // Estilos para textos pequeños
+  const smallTextStyle = {
+    fontSize: '9px',
+  };
+
+  const smallTickStyle = {
+    fontSize: '9px',
+    fill: '#666',
+  };
+
+  const smallLegendStyle = {
+    fontSize: '9px',
+  };
+
+  const smallLabelStyle = {
+    fontSize: '9px',
+  };
 
   return (
     <div>
@@ -206,8 +230,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       </div>
 
       {/* Distribución de Calidad (Pie Chart) */}
-      <div className="card shadow mb-4">
-        <div className="card-header bg-primary text-white">
+      <div className="card shadow border-primary mb-4 bg-body">
+        <div className="card-header bg-light">
           <h5 className="mb-0"><FaAngleRight /> Distribución de Calidad del Aire</h5>
         </div>
         <div className="card-body">
@@ -221,7 +245,6 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -230,8 +253,14 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value} estaciones`, 'Cantidad']} />
-                    <Legend />
+                    <Tooltip 
+                      formatter={(value) => [`${value} estaciones`, 'Cantidad']}
+                      contentStyle={smallTextStyle}
+                    />
+                    <Legend 
+                      wrapperStyle={smallLegendStyle}
+                      formatter={(value) => <span style={smallTextStyle}>{value}</span>}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -249,7 +278,7 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                         backgroundColor: item.color 
                       }}
                     />
-                    <span className="small">
+                    <span className="small" style={smallTextStyle}>
                       <strong>{item.name}:</strong> {item.value} estaciones
                     </span>
                   </div>
@@ -257,12 +286,12 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                 {stats && stats.quality_distribution && (
                   <div className="mt-3 pt-3 border-top">
                     <h6 className="mb-2">Estadísticas del conjunto:</h6>
-                    <div className="small">
+                    <div className="small" style={smallTextStyle}>
                       <div>Total estaciones: <strong>{stats.total_stations}</strong></div>
                       <div>Con datos: <strong>{stats.stations_with_data}</strong></div>
                       <div>Promedio: <strong>{stats.avg_concentration.toFixed(1)} µg/m³</strong></div>
                       {stats.is_mock_data && (
-                        <div className="text-warning mt-2">
+                        <div className="text-warning mt-2" style={smallTextStyle}>
                           <FaExclamationTriangle className="me-1" /> Datos simulados
                         </div>
                       )}
@@ -276,8 +305,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       </div>
 
       {/* Top 15 Estaciones mas Contaminadas */}
-      <div className="card shadow mb-4">
-        <div className="card-header bg-danger text-white">
+      <div className="card shadow border-primary mb-4 bg-body">
+        <div className="card-header bg-light">
           <h5 className="mb-0"><FaAngleRight /> Top 15 Estaciones - Concentración de {pollutant}</h5>
         </div>
         <div className="card-body">
@@ -293,14 +322,17 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                   angle={-45}
                   textAnchor="end"
                   height={40}
+                  tick={smallTickStyle}
                 />
                 <YAxis 
                   label={{ 
                     value: `Concentración (µg/m³)`, 
                     angle: -90, 
                     position: 'insideLeft',
-                    offset: -10
-                  }} 
+                    offset: -10,
+                    style: smallLabelStyle
+                  }}
+                  tick={smallTickStyle}
                 />
                 <Tooltip 
                   formatter={(value, name) => {
@@ -314,8 +346,18 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                     }
                     return label;
                   }}
+                  contentStyle={smallTextStyle}
                 />
-                <Legend />
+                <Legend 
+                    wrapperStyle={{
+                    ...smallLegendStyle,
+                    paddingLeft: '10px'    // ← Empuja la leyenda hacia la derecha
+                  }}
+                  formatter={(value) => <span style={smallTextStyle}>{value}</span>}
+                  verticalAlign="top"
+                  align="right"
+                  layout="vertical"
+                />
                 <Bar 
                   dataKey="concentration" 
                   name={`${pollutant} (µg/m³)`}
@@ -324,7 +366,7 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 small text-muted text-center">
+          <div className="mt-3 small text-muted text-center" style={smallTextStyle}>
             Muestra las 15 estaciones con mayor concentración de {pollutant}. 
             Los datos son en microgramos por metro cúbico (µg/m³).
           </div>
@@ -334,8 +376,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       {/* Relación Concentración vs AQI */}
       <div className="row">
         <div className="col-md-6">
-          <div className="card shadow">
-            <div className="card-header bg-info text-white">
+          <div className="card shadow border-primary mb-4 bg-body">
+            <div className="card-header bg-light">
               <h5 className="mb-0"><FaAngleRight /> Concentración vs Índice AQI</h5>
             </div>
             <div className="card-body">
@@ -351,6 +393,13 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                       name="Concentración" 
                       unit=" µg/m³"
                       domain={[0, 'dataMax + 5']}
+                      tick={smallTickStyle}
+                      label={{ 
+                        value: 'Concentración (µg/m³)', 
+                        position: 'bottom',
+                        offset: 0,
+                        style: smallLabelStyle
+                      }}
                     />
                     <YAxis 
                       type="number" 
@@ -358,6 +407,14 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                       name="AQI" 
                       domain={[1, 5]}
                       ticks={[1, 2, 3, 4, 5]}
+                      tick={smallTickStyle}
+                      label={{ 
+                        value: 'Índice AQI', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -5,
+                        style: smallLabelStyle
+                      }}
                     />
                     <ZAxis type="number" dataKey="z" range={[60, 400]} />
                     <Tooltip 
@@ -372,16 +429,17 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                         }
                         return label;
                       }}
+                      contentStyle={smallTextStyle}
                     />
                     <Scatter 
                       name="Estaciones" 
                       data={scatterData} 
-                      fill={POLLUTANT_COLORS[pollutant] || '#8884d8'}
+                      fill="#00A2E8"
                     />
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3 small text-muted">
+              <div className="mt-3 small text-muted" style={smallTextStyle}>
                 Relación entre concentración de {pollutant} y el Índice de Calidad del Aire (AQI).
                 Cada punto representa una estación de medición.
               </div>
@@ -390,8 +448,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
         </div>
 
         <div className="col-md-6">
-          <div className="card shadow">
-            <div className="card-header bg-success text-white">
+          <div className="card shadow border-primary mb-4 bg-body">
+            <div className="card-header bg-light">
               <h5 className="mb-0"><FaAngleRight /> Distribución por Clase de Estación</h5>
             </div>
             <div className="card-body">
@@ -399,9 +457,24 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stationClassDistribution}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => [`${value} estaciones`, 'Cantidad']} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={smallTickStyle}
+                    />
+                    <YAxis 
+                      tick={smallTickStyle}
+                      label={{ 
+                        value: 'Número de Estaciones', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -5,
+                        style: smallLabelStyle
+                      }}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`${value} estaciones`, 'Cantidad']}
+                      contentStyle={smallTextStyle}
+                    />
                     <Bar 
                       dataKey="value" 
                       name="Estaciones" 
@@ -416,21 +489,21 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                   <div className="col-6">
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-primary" />
-                      <span>Clase 1: Urbana</span>
+                      <span style={smallTextStyle}>Clase 1: Urbana</span>
                     </div>
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-success" />
-                      <span>Clase 2: Suburbana</span>
+                      <span style={smallTextStyle}>Clase 2: Suburbana</span>
                     </div>
                   </div>
                   <div className="col-6">
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-warning" />
-                      <span>Clase 3: Rural</span>
+                      <span style={smallTextStyle}>Clase 3: Rural</span>
                     </div>
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-info" />
-                      <span>Clase 4: Tráfico</span>
+                      <span style={smallTextStyle}>Clase 4: Tráfico</span>
                     </div>
                   </div>
                 </div>
@@ -441,8 +514,8 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
       </div>
 
       {/* Información del Contaminante */}
-      <div className="card shadow mt-4">
-        <div className="card-header bg-secondary text-white">
+      <div className="card shadow border-primary mb-4 bg-body">
+        <div className="card-header bg-light">
           <h5 className="mb-0"><FaInfo /> Información sobre {pollutant}</h5>
         </div>
         <div className="card-body">
@@ -450,10 +523,10 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
             <div className="col-md-6">
               <h6><FaAngleRight /> Descripción:</h6>
               <p className="small">
-                {pollutant === 'PM2.5' && 'Partículas finas menores a 2.5 micrómetros. Penetran profundamente en los pulmones y pueden entrar al torrente sanguÃ­neo.'}
+                {pollutant === 'PM2.5' && 'Partículas finas menores a 2.5 micrómetros. Penetran profundamente en los pulmones y pueden entrar al torrente sanguíneo.'}
                 {pollutant === 'PM10' && 'Partículas inhalables menores a 10 micrómetros. Pueden afectar el corazón y los pulmones.'}
                 {pollutant === 'NO2' && 'Dióxido de nitrógeno. Gas tóxico que irrita las vías respiratorias y contribuye a la formación de smog.'}
-                {pollutant === 'O3' && 'Ozono troposfÃ©rico. Componente principal del smog que puede causar problemas respiratorios.'}
+                {pollutant === 'O3' && 'Ozono troposférico. Componente principal del smog que puede causar problemas respiratorios.'}
                 {pollutant === 'SO2' && 'Dióxido de azufre. Gas irritante que puede causar problemas respiratorios y contribuir a la lluvia ácida.'}
                 {pollutant === 'CO' && 'Monóxido de carbono. Gas incoloro e inodoro que reduce la capacidad de la sangre para transportar oxígeno.'}
               </p>
@@ -475,7 +548,7 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                 <strong>📈 Recomendaciones:</strong> 
                 {pollutant === 'PM2.5' && ' En días con alta concentración, limite actividades al aire libre, especialmente personas con condiciones respiratorias.'}
                 {pollutant === 'O3' && ' Evite ejercicio intenso al aire libre durante las horas de mayor concentración de ozono (tarde).'}
-                {pollutant === 'NO2' && ' Ventile adecuadamente los espacios interiores y evite Ã¡reas con trÃ¡fico denso.'}
+                {pollutant === 'NO2' && ' Ventile adecuadamente los espacios interiores y evite áreas con tráfico denso.'}
                 <br />
                 <small className="text-muted">Fuente: Organización Mundial de la Salud (OMS)</small>
               </div>

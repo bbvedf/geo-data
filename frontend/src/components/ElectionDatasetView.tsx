@@ -455,7 +455,7 @@ function ElectionDatasetView() {
                   </div>
 
                   {/* Botones */}
-                  <div className="col-12 col-md-4 d-flex gap-2 align-items-end">
+                  <div className="col-12 col-md-4 d-flex gap-2 align-items-end ms-auto">
                     <button
                       className="btn btn-danger"
                       onClick={clearFilters}
@@ -464,7 +464,7 @@ function ElectionDatasetView() {
                       <FaTrashAlt />
                     </button>
                     <button
-                      className="btn btn-primary grow"
+                      className="btn btn-primary"
                       onClick={applyFilters}
                       disabled={isFiltering}
                     >
