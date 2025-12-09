@@ -19,9 +19,6 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Routing profesional:** React Router con navegación entre vistas
 - **Sistema de temas:** Claro/oscuro con persistencia en localStorage
 - **Vistas específicas por dataset:** Mapa, Gráficos y Datos en tabs
-- **Datos COVID España:** 4,680 registros (19 CCAA × 90 días × provincias)
-- **Datos Clima España:** Condiciones meteorológicas en tiempo real de ciudades españolas
-- **Datos Calidad Aire España:** Mapa de calidad del aire en tiempo real de ciudades españolas
 - **Backend FastAPI:** Con filtros avanzados y estadísticas
 - **Frontend React:** TypeScript, Bootstrap 5, Leaflet, Recharts
 
@@ -30,7 +27,7 @@ Aplicación de visualización geoespacial y análisis temporal.
 1. **COVID España** - Casos por comunidad autónoma y provincia (2023)
 2. **Clima España** - Condiciones meteorológicas actuales en ciudades españolas (OpenWeatherMap)
 3. **Elecciones** - Resultados municipales 2023
-3. **Calidad del Aire España** - Mapa de calidad del aire actual en ciudades españolas (discomap.eea.europa.eu)
+3. **Calidad del Aire España** - Mapa de calidad del aire actual en ciudades españolas (MITECO)
 
 
 ## 🛠️ TECNOLOGÍAS  
