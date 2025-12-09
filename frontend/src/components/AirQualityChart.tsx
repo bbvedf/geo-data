@@ -163,20 +163,20 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
 
   // Estilos para textos pequeños
   const smallTextStyle = {
-    fontSize: '9px',
+    fontSize: '10px',
   };
 
   const smallTickStyle = {
-    fontSize: '9px',
+    fontSize: '10px',
     fill: '#666',
   };
 
   const smallLegendStyle = {
-    fontSize: '9px',
+    fontSize: '10px',
   };
 
   const smallLabelStyle = {
-    fontSize: '9px',
+    fontSize: '10px',
   };
 
   return (
@@ -489,11 +489,11 @@ const AirQualityChart = ({ data, pollutant, stats }: AirQualityChartProps) => {
                   <div className="col-6">
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-primary" />
-                      <span style={smallTextStyle}>Clase 1: Urbana</span>
+                      <span style={smallTextStyle}>Clase 1: Fondo</span>
                     </div>
                     <div className="d-flex align-items-center mb-1">
                       <FaMapMarkerAlt className="me-2 text-success" />
-                      <span style={smallTextStyle}>Clase 2: Suburbana</span>
+                      <span style={smallTextStyle}>Clase 2: Industrial</span>
                     </div>
                   </div>
                   <div className="col-6">

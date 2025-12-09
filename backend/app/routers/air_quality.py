@@ -41,6 +41,14 @@ ICA_TO_AQI = {
     6: 5   # Extremadamente desfavorable
 }
 
+# ✅ NUEVO: Mapeo de tipo MITECO a station_class
+TIPO_TO_CLASS = {
+    'FONDO': 1,        # Urbana de fondo
+    'TRAFICO': 4,      # Tráfico
+    'INDUSTRIAL': 2,   # Suburbana/Industrial
+    'RURAL': 3         # Rural
+}
+
 
 def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
     """Descarga y parsea datos del MITECO (con manejo robusto de errores)"""
@@ -106,11 +114,12 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                     errores_parseo += 1
                     continue
                 
-                # ===== PARSEAR ÍNDICE (PUEDE ESTAR VACÍO) =====
+                # ===== ✅ PARSEAR ÍNDICE (CORREGIDO) =====
                 indice_ica = None
                 tiene_indice = False
                 
-                if indice_str:  # Si no está vacío
+                # Solo intentar parsear si NO está vacío
+                if indice_str:  
                     try:
                         indice_ica = int(indice_str)
                         tiene_indice = True
@@ -118,7 +127,7 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                         # Índice no es un número válido
                         estaciones_sin_indice += 1
                 else:
-                    # Índice vacío
+                    # Índice vacío (esto es normal para algunas estaciones)
                     estaciones_sin_indice += 1
                 
                 # ===== CONSTRUIR DATO =====
@@ -128,7 +137,7 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
                     'tipo': tipo_estacion,
                     'lat': lat,
                     'lon': lon,
-                    'activa': True,  # Ya sabemos que es activa
+                    'activa': True,
                     'fecha': fecha if fecha else datetime.now().isoformat(),
                     'indice_ica': indice_ica,
                     'tiene_indice': tiene_indice,
@@ -160,7 +169,7 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
             
             if con_indice:
                 ejemplo = con_indice[0]
-                print(f"   📍 Ejemplo: {ejemplo['nombre']} - ICA:{ejemplo['indice_ica']} - {ejemplo['debido_a']}")
+                print(f"   🔍 Ejemplo: {ejemplo['nombre']} - ICA:{ejemplo['indice_ica']} - {ejemplo['debido_a']}")
         
         return datos
         
@@ -181,6 +190,9 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                 # Generar ID único
                 station_id = int(dato['cod_estacion']) if dato['cod_estacion'].isdigit() else abs(hash(dato['cod_estacion'])) % 1000000
                 
+                # ✅ MAPEAR TIPO A STATION_CLASS
+                station_class = TIPO_TO_CLASS.get(dato['tipo'], 1)
+                
                 # Determinar si tiene datos válidos
                 tiene_datos_validos = (
                     dato['activa'] and 
@@ -192,7 +204,7 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                 # Construir estación
                 if tiene_datos_validos:
                     # Calcular concentración simulada basada en ICA
-                    concentracion = dato['indice_ica'] * 10  # ICA * 10 = concentración aproximada
+                    concentracion = dato['indice_ica'] * 10
                     
                     calidad_info = obtener_calidad_texto(dato['aqi'])
                     
@@ -203,7 +215,7 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                         'name': dato['nombre'],
                         'country_code': 'ES',
                         'country': 'Spain',
-                        'station_class': 1,
+                        'station_class': station_class,  # ✅ CORREGIDO
                         'station_type': dato['tipo'],
                         'lat': dato['lat'],
                         'lon': dato['lon'],
@@ -233,7 +245,7 @@ def convertir_a_estaciones(datos: List[Dict]) -> List[Dict]:
                         'name': dato['nombre'],
                         'country_code': 'ES',
                         'country': 'Spain',
-                        'station_class': 1,
+                        'station_class': station_class,  # ✅ CORREGIDO
                         'station_type': dato['tipo'],
                         'lat': dato['lat'],
                         'lon': dato['lon'],
@@ -298,7 +310,8 @@ def obtener_datos_mock(limite: int = 100) -> List[Dict]:
             'name': f"Estación {ciudad['nombre']}",
             'country_code': 'ES',
             'country': 'Spain',
-            'station_class': 1,
+            'station_class': random.randint(1, 4),  # ✅ Aleatorio para mock
+            'station_type': 'MOCK',
             'lat': ciudad['lat'] + random.uniform(-0.05, 0.05),
             'lon': ciudad['lon'] + random.uniform(-0.05, 0.05),
             'available_pollutants': ['PM2.5', 'PM10', 'NO2'],
