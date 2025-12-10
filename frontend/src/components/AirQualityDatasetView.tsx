@@ -235,7 +235,7 @@ function AirQualityDatasetView() {
 
       const response = await api.get('/api/air-quality/stations', {
         params: { 
-          limite: 500,
+          limite: 1000,
           contaminante: selectedPollutant === 'ALL' ? 'PM2.5' : selectedPollutant,
           solo_con_datos: false,
           light: false
@@ -295,6 +295,7 @@ function AirQualityDatasetView() {
 
   // ============ LIMPIAR FILTROS ============
   const clearFilters = () => {
+    // 1. Resetear filtros manuales
     setFilters({
       ciudad: '',
       min_aqi: 1,
@@ -302,18 +303,38 @@ function AirQualityDatasetView() {
       calidad: 'todas',
     });
     
-    // Volver al filtrado por contaminante (sin filtros manuales)
-    const filteredByPollutant = filterStationsByPollutant(allStations, selectedPollutant);
+    // 2. Resetear contaminante a "Todos"
+    setSelectedPollutant('ALL');
+    
+    // 3. Filtrar estaciones por "Todos" (todas las estaciones)
+    const filteredByPollutant = filterStationsByPollutant(allStations, 'ALL');
     setFilteredStations(filteredByPollutant);
     
-    console.log('Filtros manuales limpiados');
+    // 4. Recargar stats para "Todos"
+    const loadStatsForAll = async () => {
+      try {
+        const statsResponse = await api.get('/api/air-quality/stats', {
+          params: { 
+            contaminante: 'PM2.5', // O cualquier default
+            forzar_mock: false 
+          }
+        });
+        setStats(statsResponse.data);
+      } catch (error) {
+        console.error('Error cargando stats:', error);
+      }
+    };
+    loadStatsForAll();
+    
+    console.log('✅ Todos los filtros limpiados (incluido contaminante)');
   };
 
   const hasActiveFilters = 
     filters.ciudad !== '' || 
     filters.min_aqi > 1 || 
     filters.max_aqi < 5 ||
-    filters.calidad !== 'todas';
+    filters.calidad !== 'todas' ||
+    selectedPollutant !== 'ALL';
 
   if (loading) {
     return (
@@ -656,8 +677,7 @@ function AirQualityDatasetView() {
             ) : (
               <AirQualityChart 
                 data={fullData}
-                pollutant={selectedPollutant}
-                stats={stats}
+                pollutant={selectedPollutant}                
               />
             )}
           </div>
