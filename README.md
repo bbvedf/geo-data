@@ -146,11 +146,6 @@ Autenticación de usuarios
 Panel de administración  
 
 
-## 🖼️ Capturas de pantalla  
-https://via.placeholder.com/800x400/3B82F6/FFFFFF?text=Mapa+Interactivo+Geo-Data  
-https://via.placeholder.com/800x400/10B981/FFFFFF?text=Gr%C3%A1ficos+de+An%C3%A1lisis+Temporal  
-
-
 ## 🤝 Contribuir  
 Fork el proyecto  
 Crear rama (git checkout -b feature/nueva-funcionalidad)   
@@ -161,3 +156,10 @@ Crear Pull Request
 
 ## 📄 Licencia  
 MIT License - ver LICENSE para más detalles.  
+
+
+## 📸 Capturas de pantalla  
+|                                    |                                    |                                    |
+|:----------------------------------:|:----------------------------------:|:----------------------------------:|
+| **Vista general del mapa**<br>![Map Overview](01-overview-map.png) | **Filtros activos en mapa**<br>![Active Filters](02-filters-active.png) | **Pestaña análisis (gráficos)**<br>![Chart Analysis](03-chart-analysis.png) |
+| **Pestaña datos con filtros**<br>![Data Table](04-data-table-filters.png) | **Tema claro/oscuro**<br>![Dark Mode](05-dark-mode.png) | **Vista responsive (mobile)**<br>![Mobile View](06-responsive-mobile.png) |
