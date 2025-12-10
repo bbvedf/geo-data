@@ -415,6 +415,7 @@ function AirQualityDatasetView() {
     console.log('✅ Todos los filtros limpiados');
   };
 
+
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -430,6 +431,7 @@ function AirQualityDatasetView() {
 
   return (
     <>
+      <div style={{ minHeight: '100vh', overflow: 'hidden' }}>
       {/* TABS */}
       <div className="mb-4">
         <ul className="nav nav-tabs">
@@ -521,6 +523,8 @@ function AirQualityDatasetView() {
           onExport={handleExportData}
         />
       )}
+      </div>
+      );
     </>
   );
 }
