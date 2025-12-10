@@ -1,4 +1,5 @@
-// src/components/AirQualityChart.tsx
+// frontend/src/components/AirQualityChart.tsx
+// Pestaña "chart" 
 import { 
   BarChart, 
   Bar, 

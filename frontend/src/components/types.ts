@@ -1,6 +1,6 @@
-// src/components/types.ts
+// src/components/types.ts (versión completa corregida)
 export interface CovidLocation {
-  id?: number  // ✅ AÑADIDO para fetch individual
+  id?: number
   lat: number
   lon: number
   comunidad: string
@@ -27,9 +27,8 @@ export interface WeatherLocation {
   country?: string
 }
 
-// Interface actualizada para soportar tanto datos light como completos
 export interface ElectionLocation {
-  codigo_ine: string  // ✅ AÑADIDO
+  codigo_ine: string
   lat: number
   lon: number
   nombre_municipio: string
@@ -38,7 +37,6 @@ export interface ElectionLocation {
   participacion: number
   partido_ganador: string
   
-  // Campos opcionales (solo en datos completos)
   nombre_comunidad?: string
   votos_ganador?: number
   pp?: number
@@ -58,7 +56,6 @@ export interface ElectionLocation {
   created_at?: string
 }
 
-// ✅ Interface completa para calidad del aire
 export interface AirQualityStation {
   id: number
   station_code: string
@@ -67,12 +64,11 @@ export interface AirQualityStation {
   country_code: string
   country: string
   station_class: number
-  station_type: string  // ✅ AÑADIDO: TRAFICO, INDUSTRIAL, FONDO
+  station_type: string
   lat: number
   lon: number
   available_pollutants: string[]
   
-  // Campos de medición
   last_measurement?: number
   last_aqi?: number
   pollutant?: string
@@ -82,22 +78,57 @@ export interface AirQualityStation {
   recommendation?: string
   last_updated: string
   
-  // Campos de estado
   is_mock?: boolean
   has_real_data?: boolean
-  is_active?: boolean  // ✅ AÑADIDO: true/false
+  is_active?: boolean
   
-  // Campos específicos MITECO
   data_source?: string
   measurement_timestamp?: string
   ica_index?: number
   ica_contaminant?: string
   
-  // Para modo light (opcional)
   station_code_short?: string
 }
 
-export type MapDataType = CovidLocation | WeatherLocation | ElectionLocation | AirQualityStation;
+// Versión ligera para listas
+export interface AirQualityStationLight {
+  id: number;
+  name: string;
+  lat: number;
+  lon: number;
+  last_aqi: number | null;
+  quality_color: string | null;
+  pollutant: string | null;
+  station_code: string;
+  is_active: boolean;
+  station_class: string | null;
+  station_type: string | null;
+}
+
+// Estadísticas
+export interface AirQualityStats {
+  pollutant: string;
+  description: string;
+  total_stations: number;
+  stations_with_data: number;
+  avg_concentration: number;
+  min_concentration: number;
+  max_concentration: number;
+  quality_distribution: Record<string, number>;
+  timestamp: string;
+  is_mock_data: boolean;
+}
+
+// Alias para compatibilidad
+export type AirQualityStationFull = AirQualityStation;
+
+// ACTUALIZADO: Ahora incluye AirQualityStationLight
+export type MapDataType = 
+  | CovidLocation 
+  | WeatherLocation 
+  | ElectionLocation 
+  | AirQualityStation
+  | AirQualityStationLight;
 export type MapType = 'covid' | 'weather' | 'elections' | 'air-quality';
 
 // Type guards
@@ -113,6 +144,14 @@ export function isElectionData(data: MapDataType[]): data is ElectionLocation[] 
   return data.length > 0 && 'partido_ganador' in data[0]
 }
 
-export function isAirQualityData(data: MapDataType[]): data is AirQualityStation[] {
-  return data.length > 0 && 'station_code' in data[0]
+export function isAirQualityData(data: MapDataType[]): data is AirQualityStation[] | AirQualityStationLight[] {
+  if (data.length === 0) return false;
+  const item = data[0];
+  return 'station_code' in item && ('available_pollutants' in item || 'last_aqi' in item);
+}
+
+export function isAirQualityLightData(data: MapDataType[]): data is AirQualityStationLight[] {
+  if (data.length === 0) return false;
+  const item = data[0];
+  return 'name' in item && 'station_code' in item && 'last_aqi' in item && !('available_pollutants' in item);
 }

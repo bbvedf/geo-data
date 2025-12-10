@@ -1,4 +1,5 @@
-// /home/bbvedf/prog/geo-data/frontend/src/components/AirQualityMapRenderer.tsx
+// frontend/src/components/AirQualityMapRenderer.tsx
+// Componente bajo nivel del mapa
 import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';

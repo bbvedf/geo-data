@@ -1,53 +1,31 @@
-// /home/bbvedf/prog/geo-data/frontend/src/components/AirQualityDatasetView.tsx
+// frontend/src/components/AirQualityDatasetView.tsx
+// Componente principal de orquestación.
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import VanillaMap from './VanillaMap';
-import { AirQualityStation } from './types';
+import {
+  AirQualityStationLight,
+  AirQualityStats,
+  AirQualityStation
+} from './types';
 import AirQualityChart from './AirQualityChart';
+import AirQualityTable from './AirQualityTable';
+import AirQualityMapView from './AirQualityMapView';
 import { 
-  FaFilter, 
-  FaTrashAlt, 
   FaSpinner,
-  FaSmog,
   FaChartBar, 
   FaMapMarkedAlt,
   FaDatabase,
-  FaExclamationTriangle,
-  FaLeaf,
-  FaCity,
-  FaSearch,
-  FaTimes,
-  FaDownload  
 } from 'react-icons/fa';
 
 const api = axios.create({
   baseURL: 'http://localhost:8180',
 });
 
-interface AirQualityStationLight extends Pick<AirQualityStation, 
-  'id' | 'name' | 'lat' | 'lon' | 'last_aqi' | 'quality_color' | 'pollutant' | 
-  'station_code' | 'is_active' | 'station_class' | 'station_type'
-> {};
-
-interface AirQualityStationFull extends AirQualityStation {};
-
-interface AirQualityStats {
-  pollutant: string;
-  description: string;
-  total_stations: number;
-  stations_with_data: number;
-  avg_concentration: number;
-  min_concentration: number;
-  max_concentration: number;
-  quality_distribution: Record<string, number>;
-  timestamp: string;
-  is_mock_data: boolean;
-}
 
 function AirQualityDatasetView() {
   const [allStations, setAllStations] = useState<AirQualityStationLight[]>([]);
   const [filteredStations, setFilteredStations] = useState<AirQualityStationLight[]>([]);
-  const [fullData, setFullData] = useState<AirQualityStationFull[]>([]);
+  const [fullData, setFullData] = useState<AirQualityStation[]>([]);
   const [stats, setStats] = useState<AirQualityStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -138,10 +116,6 @@ function AirQualityDatasetView() {
     { value: 4, label: 'Muy Mala', color: '#ff0000'},
     { value: 5, label: 'Extremadamente Mala', color: '#8f3f97'},
   ];
-
-  // Función "Mostrar más..."
-  const [visibleCount, setVisibleCount] = useState(50);
-
 
   // ============ CARGA INICIAL (UNA SOLA VEZ) ============
   useEffect(() => {
@@ -441,13 +415,6 @@ function AirQualityDatasetView() {
     console.log('✅ Todos los filtros limpiados');
   };
 
-  const hasActiveFilters = 
-    filters.ciudad !== '' || 
-    filters.min_aqi > 1 || 
-    filters.max_aqi < 5 ||
-    filters.calidad !== 'todas' ||
-    selectedPollutant !== 'ALL';
-
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -494,287 +461,20 @@ function AirQualityDatasetView() {
       </div>
 
       {activeTab === 'map' && (
-        <div className="card shadow">
-          <div className="card-body">
-            <h2 className="card-title mb-4">🌫️ Calidad del Aire en España</h2>
-            
-            {/* Estadísticas rápidas */}
-            {stats && (
-              <div className="row mb-4">
-                <div className="col-md-3 col-6">
-                  <div className="card border-primary">
-                    <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Estaciones Totales</div>
-                      <div className="h4 mb-0 text-success">{allStations.length.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3 col-6">
-                  <div className="card border-primary">
-                    <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Mostrando</div>
-                      <div className="h4 mb-0 text-warning">{filteredStations.length.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3 col-6">
-                  <div className="card border-primary">
-                    <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Concentración Media</div>
-                      <div className="h4 mb-0 text-info">{stats.avg_concentration.toFixed(1)} ICA</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3 col-6">
-                  <div className="card border-primary">
-                    <div className="card-body p-3 text-center rounded-4 bg-body">
-                      <div className="text-muted small">Calidad Predominante</div>
-                      <div className="h4 mb-0 text-primary">
-                        {Object.entries(stats.quality_distribution)
-                          .sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Selector de contaminante */}
-            <div className="card border-primary mb-4 bg-body">
-              <div className="card-header bg-light">
-                <h3 className="h5 mb-0">
-                  <FaSmog className="me-2" /> Contaminante Principal
-                </h3>
-              </div>
-              <div className="card-body">
-                <div className="d-flex flex-wrap gap-2">
-                  {pollutants.map(pollutant => (
-                    <button
-                      key={pollutant.value}
-                      className={`btn ${selectedPollutant === pollutant.value ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      onClick={() => handlePollutantChange(pollutant.value)}
-                      disabled={isFiltering}
-                    >
-                      {pollutant.label}
-                      <span className="ms-1 small d-none d-md-inline">{pollutant.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* FILTROS */}
-            <div className="card border-primary mb-4 bg-body">
-              <div className="card-header bg-light">
-                <h3 className="h5 mb-0">
-                  <FaFilter className="me-2" /> Filtros
-                  {isFiltering && <FaSpinner className="ms-2 fa-spin" />}
-                </h3>
-              </div>
-              <div className="card-body">
-                {hasActiveFilters && (
-                  <div className="alert alert-info mb-3">
-                    <strong>⚡ Filtros activos:</strong>
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                      {filters.ciudad && (
-                        <span className="badge bg-info">Estación: {filters.ciudad}</span>
-                      )}
-                      {filters.min_aqi > 1 && (
-                        <span className="badge bg-info">AQI mín: {filters.min_aqi}</span>
-                      )}
-                      {filters.max_aqi < 5 && (
-                        <span className="badge bg-info">AQI máx: {filters.max_aqi}</span>
-                      )}
-                      {filters.calidad !== 'todas' && (
-                        <span className="badge bg-info">
-                          Calidad: {aqiLevels.find(l => l.value.toString() === filters.calidad)?.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Indicador de filtro por contaminante */}
-                {selectedPollutant !== 'ALL' && (
-                  <div className="alert alert-warning mb-3">
-                    <strong>🌫️ Contaminante filtrado:</strong> {
-                      pollutants.find(p => p.value === selectedPollutant)?.label || selectedPollutant
-                    }
-                    <br/>
-                    <small>
-                      {selectedPollutant === 'SIN_CONTAMINANTE' 
-                        ? 'Mostrando estaciones sin contaminante específico' 
-                        : `Mostrando estaciones que miden ${selectedPollutant}`}
-                    </small>
-                  </div>
-                )}
-
-                <div className="row g-3">
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">
-                      <FaCity className="me-1" /> Estación/Ciudad
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Buscar estación..."
-                      value={filters.ciudad}
-                      onChange={(e) => setFilters({...filters, ciudad: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">
-                      <FaLeaf className="me-1" /> Nivel de Calidad
-                    </label>
-                    <select
-                      className="form-select"
-                      value={filters.calidad}
-                      onChange={(e) => setFilters({...filters, calidad: e.target.value})}
-                    >
-                      <option value="todas">Todos los niveles</option>
-                      {aqiLevels.map(level => (
-                        <option key={level.value} value={level.value}>
-                          {level.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">
-                      <FaExclamationTriangle className="me-1" /> Rango AQI: 
-                      <span className="badge bg-info ms-2">
-                        {filters.min_aqi} - {filters.max_aqi}
-                      </span>
-                    </label>
-                    <div className="d-flex gap-2">
-                      <input
-                        type="range"
-                        className="form-range"
-                        min="1"
-                        max="5"
-                        value={filters.min_aqi}
-                        onChange={(e) => setFilters({...filters, min_aqi: parseInt(e.target.value)})}
-                      />
-                      <input
-                        type="range"
-                        className="form-range"
-                        min="1"
-                        max="5"
-                        value={filters.max_aqi}
-                        onChange={(e) => setFilters({...filters, max_aqi: parseInt(e.target.value)})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="col-12 d-flex gap-2 justify-content-end">
-                    <button
-                      className="btn btn-danger"
-                      onClick={clearFilters}
-                      disabled={!hasActiveFilters}
-                    >
-                      <FaTrashAlt className="me-2" />                      
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={applyFilters}
-                      disabled={isFiltering}
-                    >
-                      <FaFilter className="me-2" />
-                      Aplicar Filtros
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-top">
-                  <span className="text-muted">
-                    📊 Mostrando <strong>{filteredStations.length}</strong> de{' '}
-                    <strong>{allStations.length}</strong> estaciones
-                    {selectedPollutant !== 'ALL' && (
-                      <span> (filtrado por {selectedPollutant})</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-muted mb-4">
-              Mapa interactivo de calidad del aire. Haz clic en cada estación para ver detalles completos.
-              {selectedPollutant === 'ALL' ? ' 🔗 Con clustering activado.' : ' 🔍 Vista detallada sin clustering.'}
-            </p>
-            
-            {/* MAPA */}
-            <div className="mb-4">
-              <VanillaMap 
-                data={filteredStations as any} 
-                height="600px" 
-                type="air-quality"
-                useClustering={selectedPollutant === 'ALL'}
-                selectedPollutant={selectedPollutant}
-                key={`airquality-${selectedPollutant}-${filteredStations.length}`}
-              />
-            </div>
-
-            {/* LEYENDA */}
-            <div className="p-3 rounded border" style={{ 
-                  backgroundColor: 'var(--color-card-bg)',
-                  color: 'var(--color-text)'
-                }}>
-              <div className="row">
-                <div className="col-md-8">
-                  <div className="fw-medium mb-2">🎨 Leyenda:</div>
-                  <div className="d-flex flex-wrap gap-3">
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#3498db'}}></div>
-                      <span className="small">O₃ (Ozono)</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#e74c3c'}}></div>
-                      <span className="small">NO₂</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#2ecc71'}}></div>
-                      <span className="small">PM10</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#e67e22'}}></div>
-                      <span className="small">PM2.5</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#9b59b6'}}></div>
-                      <span className="small">SO₂</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle me-2" style={{width: '16px', height: '16px', backgroundColor: '#95a5a6'}}></div>
-                      <span className="small">Sin definir</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                        <div className="me-2">
-                          <div style={{
-                            width: '14px',
-                            height: '14px',
-                            transform: 'rotate(45deg)',
-                            opacity: 0.85,
-                            border: '2px solid rgba(0, 0, 0, 0.85)'
-                          }}></div>
-                        </div>
-                        <span className="small">Estación inactiva</span>
-                      </div>
-                  </div>
-                </div>
-                <div className="col-md-4 text-md-end small text-muted">
-                  <div>Fuente: MITECO - Ministerio para la Transición Ecológica</div>
-                  {stats?.is_mock_data && (
-                    <div className="text-warning">
-                      <FaExclamationTriangle className="me-1" /> Datos simulados
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AirQualityMapView
+          allStations={allStations}
+          filteredStations={filteredStations}
+          stats={stats}
+          filters={filters}
+          selectedPollutant={selectedPollutant}
+          pollutants={pollutants}
+          aqiLevels={aqiLevels}
+          isFiltering={isFiltering}
+          onFilterChange={setFilters}
+          onClearFilters={clearFilters}
+          onApplyFilters={applyFilters}
+          onPollutantChange={handlePollutantChange}
+        />
       )}
 
       {activeTab === 'chart' && (
@@ -797,220 +497,29 @@ function AirQualityDatasetView() {
       )}
 
       {activeTab === 'data' && (
-        <div className="card shadow">
-          <div className="card-body">
-            <h2 className="card-title mb-4">📋 Datos de Estaciones</h2>
-            
-            {/* FILTROS RÁPIDOS - AUTO-APLICADOS */}
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <FaSearch />
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Buscar estación..."
-                    value={filters.ciudad}
-                    onChange={(e) => {
-                      setFilters({...filters, ciudad: e.target.value});
-                      // AUTO-FILTRO: Se aplica automáticamente en el useEffect
-                    }}
-                  />
-                  {filters.ciudad && (
-                    <button
-                      className="btn btn-outline-secondary"
-                      type="button"
-                      onClick={() => setFilters({...filters, ciudad: ''})}
-                    >
-                      <FaTimes />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <FaFilter />
-                  </span>
-                  <select
-                    className="form-select"
-                    value={filters.calidad}
-                    onChange={(e) => setFilters({...filters, calidad: e.target.value})}
-                  >
-                    <option value="todas">Todas las calidades</option>
-                    {aqiLevels.map(level => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
-                  {filters.calidad !== 'todas' && (
-                    <button
-                      className="btn btn-outline-secondary"
-                      type="button"
-                      onClick={() => setFilters({...filters, calidad: 'todas'})}
-                    >
-                      <FaTimes />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* RESUMEN DE FILTROS ACTIVOS */}
-            {(filters.ciudad || filters.calidad !== 'todas' || selectedPollutant !== 'ALL') && (
-              <div className="alert alert-info mb-3">
-                <strong>🔍 Filtros aplicados:</strong>
-                <div className="d-flex flex-wrap gap-2 mt-2 align-items-center">
-                  {filters.ciudad && (
-                    <span className="badge bg-info">
-                      Estación: {filters.ciudad}
-                      <button 
-                        className="btn btn-sm btn-link text-white p-0 ms-1"
-                        onClick={() => setFilters({...filters, ciudad: ''})}
-                      >
-                        <FaTimes />
-                      </button>
-                    </span>
-                  )}
-                  {filters.calidad !== 'todas' && (
-                    <span className="badge bg-info">
-                      Calidad: {aqiLevels.find(l => l.value.toString() === filters.calidad)?.label}
-                      <button 
-                        className="btn btn-sm btn-link text-white p-0 ms-1"
-                        onClick={() => setFilters({...filters, calidad: 'todas'})}
-                      >
-                        <FaTimes />
-                      </button>
-                    </span>
-                  )}
-                  {selectedPollutant !== 'ALL' && (
-                    <span className="badge bg-warning text-dark">
-                      Contaminante: {pollutants.find(p => p.value === selectedPollutant)?.label}
-                    </span>
-                  )}
-                  <button 
-                    className="btn btn-sm btn-outline-info"
-                    onClick={() => {
-                      setFilters({
-                        ciudad: '',
-                        min_aqi: 1,
-                        max_aqi: 5,
-                        calidad: 'todas',
-                      });
-                    }}
-                  >
-                    <FaTimes className="me-1" />
-                    Limpiar filtros
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            <div className="d-flex justify-content-between mb-3 align-items-center">
-              <p className="text-muted mb-0">
-                Mostrando {filteredStations.length} de {allStations.length} estaciones
-                {selectedPollutant !== 'ALL' && ` (filtrado por ${selectedPollutant})`}
-              </p>
-              <div className="d-flex gap-2">
-                <button 
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={handleExportData}
-                  disabled={filteredStations.length === 0}
-                >
-                  <FaDownload className="me-1" />
-                  Exportar ({filteredStations.length})
-                </button>
-              </div>
-            </div>
-            
-            {/* TABLA DE DATOS */}
-            <div className="table-responsive">
-              <table className="table table-hover table-sm">
-                <thead>
-                  <tr>
-                    <th>Estación</th>
-                    <th>Estado</th>
-                    <th>AQI</th>
-                    <th>Calidad</th>
-                    <th>Contaminante</th>
-                    <th>Tipo</th>
-                    <th>Coordenadas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStations
-                    .slice(0, visibleCount)
-                    .map((item, index) => (
-                    <tr key={index}>
-                      <td className="fw-medium">{item.name}</td>
-                      <td>
-                        {item.is_active ? (
-                          <span className="badge bg-success">Activa</span>
-                        ) : (
-                          <span className="badge bg-secondary">Inactiva</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="badge" style={{ 
-                          backgroundColor: item.quality_color || '#ccc',
-                          color: '#fff'
-                        }}>
-                          {item.last_aqi || 'N/A'}
-                        </span>
-                      </td>
-                      <td>
-                        {aqiLevels.find(l => l.value === item.last_aqi)?.label || 'Sin datos'}
-                      </td>
-                      <td>
-                        {item.pollutant || 'No definido'}
-                      </td>
-                      <td>
-                        {/* Muestra station_type si existe, sino station_class */}
-                        <small className="text-muted">
-                          {item.station_type || `Clase ${item.station_class || 'N/A'}`}
-                        </small>
-                      </td>
-                      <td className="small">
-                        {item.lat?.toFixed(4)}, {item.lon?.toFixed(4)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>            
-            
-            {/* PAGINACIÓN MEJORADA */}
-            {filteredStations.length > 50 && (
-              <div className="d-flex justify-content-between align-items-center mt-3">
-                <small className="text-muted">
-                  📋 Mostrando {Math.min(visibleCount, filteredStations.length)} de {filteredStations.length} estaciones
-                </small>
-                
-                <div className="d-flex gap-2">
-                  {filteredStations.length > visibleCount && (
-                    <button 
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => setVisibleCount(prev => prev + 50)}
-                    >
-                      Mostrar 50 más
-                    </button>
-                  )}
-                  {visibleCount > 50 && (
-                    <button 
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => setVisibleCount(50)}
-                    >
-                      <FaTimes className="me-1" /> Reducir
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <AirQualityTable
+          stations={filteredStations}
+          selectedPollutant={selectedPollutant}
+          pollutants={pollutants}
+          aqiLevels={aqiLevels}
+          onFilterChange={(newFilters) => {
+            // Solo actualizar ciudad y calidad, mantener min_aqi y max_aqi
+            setFilters(prev => ({ 
+              ...prev, 
+              ciudad: newFilters.ciudad || '', 
+              calidad: newFilters.calidad || 'todas' 
+            }));
+          }}
+          onClearFilters={() => {
+            setFilters({
+              ciudad: '',
+              min_aqi: 1,
+              max_aqi: 5,
+              calidad: 'todas',
+            });
+          }}
+          onExport={handleExportData}
+        />
       )}
     </>
   );
