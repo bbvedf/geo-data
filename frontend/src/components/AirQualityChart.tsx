@@ -19,8 +19,7 @@ import {
   FaSmog, 
   FaCity, 
   FaChartPie, 
-  FaChartBar, 
-  FaMapMarkerAlt, 
+  FaChartBar,   
   FaAngleRight, 
   FaInfo,
   FaCheckCircle,
@@ -571,24 +570,44 @@ const AirQualityChart = ({ data, pollutant }: AirQualityChartProps) => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3">
-                <h6>Tipos de Estación:</h6>
-                <div className="row small text-muted">
-                  {stationTypeDistribution.map((item) => (
-                    <div className="col-6" key={item.name}>
-                      <div className="d-flex align-items-center mb-1">
-                        <FaMapMarkerAlt 
-                          className="me-2" 
-                          style={{ color: item.color }} // ← ¡Ya tienes el color en el objeto!
-                        />
-                        <span style={smallTextStyle}>
-                          {item.description}: {item.value} estaciones
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="mt-3">
+                  <h6>Tipos de Estación:</h6>
+                  <div className="d-flex flex-column gap-2">
+                    {stationTypeDistribution.map((item) => {
+                      const total = stationTypeDistribution.reduce((sum, i) => sum + i.value, 0);
+                      const percentage = total > 0 ? (item.value / total) * 100 : 0;
+                      
+                      return (
+                        <div key={item.name}>
+                          <div className="d-flex justify-content-between small mb-1">
+                            <div className="d-flex align-items-center">
+                              <div 
+                                className="rounded-circle me-2" 
+                                style={{ 
+                                  width: '10px', 
+                                  height: '10px', 
+                                  backgroundColor: item.color 
+                                }}
+                              />
+                              <span>{item.description}</span>
+                            </div>
+                            <span>{item.value} ({percentage.toFixed(1)}%)</span>
+                          </div>
+                          <div className="progress" style={{ height: '6px' }}>
+                            <div 
+                              className="progress-bar" 
+                              role="progressbar" 
+                              style={{ 
+                                width: `${percentage}%`,
+                                backgroundColor: item.color
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
