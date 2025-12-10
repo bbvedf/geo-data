@@ -574,21 +574,19 @@ const AirQualityChart = ({ data, pollutant }: AirQualityChartProps) => {
               <div className="mt-3">
                 <h6>Tipos de Estación:</h6>
                 <div className="row small text-muted">
-                  {stationTypeDistribution.map((item, index) => {
-                    const colors = ['text-primary', 'text-success', 'text-warning', 'text-info'];
-                    const colorClass = colors[index % colors.length];
-                    
-                    return (
-                      <div className="col-6" key={item.name}>
-                        <div className="d-flex align-items-center mb-1">
-                          <FaMapMarkerAlt className={`me-2 ${colorClass}`} />
-                          <span style={smallTextStyle}>
-                            {item.description}: {item.value} estaciones
-                          </span>
-                        </div>
+                  {stationTypeDistribution.map((item) => (
+                    <div className="col-6" key={item.name}>
+                      <div className="d-flex align-items-center mb-1">
+                        <FaMapMarkerAlt 
+                          className="me-2" 
+                          style={{ color: item.color }} // ← ¡Ya tienes el color en el objeto!
+                        />
+                        <span style={smallTextStyle}>
+                          {item.description}: {item.value} estaciones
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
