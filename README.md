@@ -159,6 +159,6 @@ MIT License - ver LICENSE para más detalles.
 
 
 ## 📸 Capturas de pantalla  
-|:----------------------------------:|:----------------------------------:|:----------------------------------:|
+|                                    |                                    |                                    |
 | **Vista general del mapa**<br>![Map Overview](screenshots/01-overview-map.png) | **Filtros activos en mapa**<br>![Active Filters](screenshots/02-filters-active.png) | **Pestaña análisis (gráficos)**<br>![Chart Analysis](screenshots/03-chart-analysis.png) |
 | **Pestaña datos con filtros**<br>![Data Table](screenshots/04-data-table-filters.png) | **Tema claro/oscuro**<br>![Dark Mode](screenshots/05-dark-mode.png) | **Vista responsive (mobile)**<br>![Mobile View](screenshots/06-responsive-mobile.png) |
