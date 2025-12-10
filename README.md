@@ -159,7 +159,34 @@ MIT License - ver LICENSE para más detalles.
 
 
 ## 📸 Capturas de pantalla  
-|                                    |                                    |                                    |
-|:----------------------------------:|:----------------------------------:|:----------------------------------:|
-| **Vista general del mapa**<br>![Map Overview](screenshots/01-overview-map.png) | **Filtros activos en mapa**<br>![Active Filters](screenshots/02-filters-active.png) | **Pestaña análisis (gráficos)**<br>![Chart Analysis](screenshots/03-chart-analysis.png) |
-| **Pestaña datos con filtros**<br>![Data Table](screenshots/04-data-table-filters.png) | **Tema claro/oscuro**<br>![Dark Mode](screenshots/05-dark-mode.png) | **Vista responsive (mobile)**<br>![Mobile View](screenshots/06-responsive-mobile.png) |
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <strong>Vista general del mapa</strong><br>
+      <img src="screenshots/01-overview-map.png" width="300"><br>      
+    </td>
+    <td align="center" width="33%">
+      <strong>Filtros activos en mapa</strong><br>
+      <img src="screenshots/02-filters-active.png" width="300"><br>      
+    </td>
+    <td align="center" width="33%">
+      <strong>Pestaña análisis (gráficos)</strong><br>
+      <img src="screenshots/03-chart-analysis.png" width="300"><br>      
+    </td>
+  </tr>
+  <tr style="background-color: #f6f8fa">
+    <td align="center" width="33%">
+      <strong>Pestaña datos con filtros</strong><br>
+      <img src="screenshots/04-data-table-filters.png" width="300"><br>      
+    </td>
+    <td align="center" width="33%">
+      <strong>Tema claro/oscuro</strong><br>
+      <img src="screenshots/05-dark-mode.png" width="300"><br>      
+    </td>
+    <td align="center" width="33%">
+      <strong>Vista responsive (mobile)</strong><br>
+      <img src="screenshots/06-responsive-mobile.png" width="300"><br>      
+    </td>
+  </tr>
+</table>
