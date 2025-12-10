@@ -14,7 +14,10 @@ import {
   FaDatabase,
   FaExclamationTriangle,
   FaLeaf,
-  FaCity
+  FaCity,
+  FaSearch,
+  FaTimes,
+  FaDownload  
 } from 'react-icons/fa';
 
 const api = axios.create({
@@ -22,7 +25,8 @@ const api = axios.create({
 });
 
 interface AirQualityStationLight extends Pick<AirQualityStation, 
-  'id' | 'name' | 'lat' | 'lon' | 'last_aqi' | 'quality_color' | 'pollutant' | 'station_code' | 'is_active'
+  'id' | 'name' | 'lat' | 'lon' | 'last_aqi' | 'quality_color' | 'pollutant' | 
+  'station_code' | 'is_active' | 'station_class' | 'station_type'
 > {};
 
 interface AirQualityStationFull extends AirQualityStation {};
@@ -135,6 +139,10 @@ function AirQualityDatasetView() {
     { value: 5, label: 'Extremadamente Mala', color: '#8f3f97'},
   ];
 
+  // Función "Mostrar más..."
+  const [visibleCount, setVisibleCount] = useState(50);
+
+
   // ============ CARGA INICIAL (UNA SOLA VEZ) ============
   useEffect(() => {
     let isMounted = true;
@@ -226,6 +234,61 @@ function AirQualityDatasetView() {
     
   }, [selectedPollutant, allStations, filterStationsByPollutant]);
 
+  // ============ AUTO-FILTRO PARA PESTAÑA "DATA" ============
+  useEffect(() => {
+    // Solo aplicar auto-filtro en la pestaña "data"
+    if (activeTab !== 'data') return;
+    
+    console.log('🔄 Auto-filtrando en pestaña datos...', filters);
+    
+    const applyAutoFilters = () => {
+      let result = [...allStations];
+      
+      // Debug
+      const stationsWithoutAqi = result.filter(s => !s.last_aqi || s.last_aqi === 0).length;
+      console.log('🔍 Debug:', {
+        total: allStations.length,
+        sinAqi: stationsWithoutAqi,
+        filtros: filters,
+        contaminante: selectedPollutant
+      });
+      
+      // 1. Filtrar por contaminante primero
+      if (selectedPollutant !== 'ALL') {
+        result = filterStationsByPollutant(result, selectedPollutant);
+      }
+      
+      // 2. Filtrar por ciudad (búsqueda)
+      if (filters.ciudad) {
+        result = result.filter(item => 
+          item.name.toLowerCase().includes(filters.ciudad.toLowerCase())
+        );
+      }
+      
+      // 3. Filtrar por calidad
+      if (filters.calidad !== 'todas') {
+        const calidadNum = parseInt(filters.calidad);
+        result = result.filter(item => item.last_aqi === calidadNum);
+      }
+      
+      // 4. Filtrar por rango AQI (solo si no es el rango completo 1-5)
+      if (filters.min_aqi > 1 || filters.max_aqi < 5) {
+        result = result.filter(item => {
+          const aqi = item.last_aqi || 0;
+          return aqi >= filters.min_aqi && aqi <= filters.max_aqi;
+        });
+      }
+      
+      console.log(`✅ Auto-filtrado en pestaña datos: ${result.length} estaciones`);
+      setFilteredStations(result);
+    };
+    
+    // Aplicar con debounce para mejor performance
+    const timeoutId = setTimeout(applyAutoFilters, 300);
+    return () => clearTimeout(timeoutId);
+    
+  }, [activeTab, filters, allStations, selectedPollutant, filterStationsByPollutant]);
+
   // ============ CARGAR DATOS COMPLETOS (PARA GRÁFICOS) ============
   const loadFullData = useCallback(async () => {
     if (fullData.length > 0) return;
@@ -258,7 +321,7 @@ function AirQualityDatasetView() {
     }
   }, [activeTab, fullData.length, loadFullData]);
 
-  // ============ APLICAR FILTROS (MANUAL) ============
+  // ============ APLICAR FILTROS (MANUAL - para pestaña mapa) ============
   const applyFilters = useCallback(() => {
     setIsFiltering(true);
     
@@ -293,6 +356,49 @@ function AirQualityDatasetView() {
     }, 100);
   }, [filteredStations, filters]);
 
+  // ============ FUNCIÓN PARA EXPORTAR DATOS ============
+  const handleExportData = () => {
+    if (filteredStations.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
+    
+    const dataToExport = filteredStations.map(station => ({
+      Estación: station.name,
+      Estado: station.is_active ? 'Activa' : 'Inactiva',
+      AQI: station.last_aqi || 'N/A',
+      Calidad: aqiLevels.find(l => l.value === station.last_aqi)?.label || 'Sin datos',
+      Contaminante: station.pollutant || 'No definido',
+      Tipo: station.station_type || `Clase ${station.station_class || 'N/A'}`,
+      Latitud: station.lat,
+      Longitud: station.lon,
+      'Código Estación': station.station_code
+    }));
+    
+    // Convertir a CSV
+    const headers = Object.keys(dataToExport[0]).join(',');
+    const rows = dataToExport.map(row => 
+      Object.values(row).map(value => 
+        typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+      ).join(',')
+    );
+    
+    const csvContent = [headers, ...rows].join('\n');
+    
+    // Crear y descargar archivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `calidad-aire_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log(`📊 Exportados ${filteredStations.length} registros`);
+  };
+
   // ============ LIMPIAR FILTROS ============
   const clearFilters = () => {
     // 1. Resetear filtros manuales
@@ -306,9 +412,15 @@ function AirQualityDatasetView() {
     // 2. Resetear contaminante a "Todos"
     setSelectedPollutant('ALL');
     
-    // 3. Filtrar estaciones por "Todos" (todas las estaciones)
-    const filteredByPollutant = filterStationsByPollutant(allStations, 'ALL');
-    setFilteredStations(filteredByPollutant);
+    // 3. Diferente comportamiento según la pestaña activa
+    if (activeTab === 'map') {
+      // Para el mapa: usar applyFilters para re-aplicar (sin filtros)
+      applyFilters();
+    } else if (activeTab === 'data') {
+      // Para datos: simplemente mostrar todas las estaciones
+      setFilteredStations(allStations);
+    }
+    // Para chart: no necesita hacer nada especial
     
     // 4. Recargar stats para "Todos"
     const loadStatsForAll = async () => {
@@ -326,7 +438,7 @@ function AirQualityDatasetView() {
     };
     loadStatsForAll();
     
-    console.log('✅ Todos los filtros limpiados (incluido contaminante)');
+    console.log('✅ Todos los filtros limpiados');
   };
 
   const hasActiveFilters = 
@@ -689,68 +801,158 @@ function AirQualityDatasetView() {
           <div className="card-body">
             <h2 className="card-title mb-4">📋 Datos de Estaciones</h2>
             
-            {/* Filtro de búsqueda rápida */}
+            {/* FILTROS RÁPIDOS - AUTO-APLICADOS */}
             <div className="row mb-3">
               <div className="col-md-6">
                 <div className="input-group">
                   <span className="input-group-text">
-                    <FaCity />
+                    <FaSearch />
                   </span>
                   <input
                     type="text"
                     className="form-control"
                     placeholder="Buscar estación..."
                     value={filters.ciudad}
-                    onChange={(e) => setFilters({...filters, ciudad: e.target.value})}
+                    onChange={(e) => {
+                      setFilters({...filters, ciudad: e.target.value});
+                      // AUTO-FILTRO: Se aplica automáticamente en el useEffect
+                    }}
                   />
+                  {filters.ciudad && (
+                    <button
+                      className="btn btn-outline-secondary"
+                      type="button"
+                      onClick={() => setFilters({...filters, ciudad: ''})}
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="col-md-6">
-                <select
-                  className="form-select"
-                  value={filters.calidad}
-                  onChange={(e) => setFilters({...filters, calidad: e.target.value})}
-                >
-                  <option value="todas">Todas las calidades</option>
-                  {aqiLevels.map(level => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="input-group">
+                  <span className="input-group-text">
+                    <FaFilter />
+                  </span>
+                  <select
+                    className="form-select"
+                    value={filters.calidad}
+                    onChange={(e) => setFilters({...filters, calidad: e.target.value})}
+                  >
+                    <option value="todas">Todas las calidades</option>
+                    {aqiLevels.map(level => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
+                  </select>
+                  {filters.calidad !== 'todas' && (
+                    <button
+                      className="btn btn-outline-secondary"
+                      type="button"
+                      onClick={() => setFilters({...filters, calidad: 'todas'})}
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             
-            <div className="d-flex justify-content-between mb-3">
+            {/* RESUMEN DE FILTROS ACTIVOS */}
+            {(filters.ciudad || filters.calidad !== 'todas' || selectedPollutant !== 'ALL') && (
+              <div className="alert alert-info mb-3">
+                <strong>🔍 Filtros aplicados:</strong>
+                <div className="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                  {filters.ciudad && (
+                    <span className="badge bg-info">
+                      Estación: {filters.ciudad}
+                      <button 
+                        className="btn btn-sm btn-link text-white p-0 ms-1"
+                        onClick={() => setFilters({...filters, ciudad: ''})}
+                      >
+                        <FaTimes />
+                      </button>
+                    </span>
+                  )}
+                  {filters.calidad !== 'todas' && (
+                    <span className="badge bg-info">
+                      Calidad: {aqiLevels.find(l => l.value.toString() === filters.calidad)?.label}
+                      <button 
+                        className="btn btn-sm btn-link text-white p-0 ms-1"
+                        onClick={() => setFilters({...filters, calidad: 'todas'})}
+                      >
+                        <FaTimes />
+                      </button>
+                    </span>
+                  )}
+                  {selectedPollutant !== 'ALL' && (
+                    <span className="badge bg-warning text-dark">
+                      Contaminante: {pollutants.find(p => p.value === selectedPollutant)?.label}
+                    </span>
+                  )}
+                  <button 
+                    className="btn btn-sm btn-outline-info"
+                    onClick={() => {
+                      setFilters({
+                        ciudad: '',
+                        min_aqi: 1,
+                        max_aqi: 5,
+                        calidad: 'todas',
+                      });
+                    }}
+                  >
+                    <FaTimes className="me-1" />
+                    Limpiar filtros
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <div className="d-flex justify-content-between mb-3 align-items-center">
               <p className="text-muted mb-0">
-                Mostrando {filteredStations.length} estaciones
+                Mostrando {filteredStations.length} de {allStations.length} estaciones
                 {selectedPollutant !== 'ALL' && ` (filtrado por ${selectedPollutant})`}
               </p>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={applyFilters}
-              >
-                <FaFilter className="me-1" />
-                Aplicar Filtros
-              </button>
+              <div className="d-flex gap-2">
+                <button 
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={handleExportData}
+                  disabled={filteredStations.length === 0}
+                >
+                  <FaDownload className="me-1" />
+                  Exportar ({filteredStations.length})
+                </button>
+              </div>
             </div>
             
+            {/* TABLA DE DATOS */}
             <div className="table-responsive">
-              <table className="table table-hover">
+              <table className="table table-hover table-sm">
                 <thead>
                   <tr>
                     <th>Estación</th>
+                    <th>Estado</th>
                     <th>AQI</th>
                     <th>Calidad</th>
                     <th>Contaminante</th>
-                    <th>Estado</th>
+                    <th>Tipo</th>
                     <th>Coordenadas</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStations.map((item, index) => (
+                  {filteredStations
+                    .slice(0, visibleCount)
+                    .map((item, index) => (
                     <tr key={index}>
                       <td className="fw-medium">{item.name}</td>
+                      <td>
+                        {item.is_active ? (
+                          <span className="badge bg-success">Activa</span>
+                        ) : (
+                          <span className="badge bg-secondary">Inactiva</span>
+                        )}
+                      </td>
                       <td>
                         <span className="badge" style={{ 
                           backgroundColor: item.quality_color || '#ccc',
@@ -766,11 +968,10 @@ function AirQualityDatasetView() {
                         {item.pollutant || 'No definido'}
                       </td>
                       <td>
-                        {item.is_active ? (
-                          <span className="badge bg-success">Activa</span>
-                        ) : (
-                          <span className="badge bg-secondary">Inactiva</span>
-                        )}
+                        {/* Muestra station_type si existe, sino station_class */}
+                        <small className="text-muted">
+                          {item.station_type || `Clase ${item.station_class || 'N/A'}`}
+                        </small>
                       </td>
                       <td className="small">
                         {item.lat?.toFixed(4)}, {item.lon?.toFixed(4)}
@@ -779,7 +980,35 @@ function AirQualityDatasetView() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>            
+            
+            {/* PAGINACIÓN MEJORADA */}
+            {filteredStations.length > 50 && (
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <small className="text-muted">
+                  📋 Mostrando {Math.min(visibleCount, filteredStations.length)} de {filteredStations.length} estaciones
+                </small>
+                
+                <div className="d-flex gap-2">
+                  {filteredStations.length > visibleCount && (
+                    <button 
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => setVisibleCount(prev => prev + 50)}
+                    >
+                      Mostrar 50 más
+                    </button>
+                  )}
+                  {visibleCount > 50 && (
+                    <button 
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => setVisibleCount(50)}
+                    >
+                      <FaTimes className="me-1" /> Reducir
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
