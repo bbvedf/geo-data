@@ -524,7 +524,6 @@ function AirQualityDatasetView() {
         />
       )}
       </div>
-      );
     </>
   );
 }

@@ -60,11 +60,11 @@ def descargar_datos_miteco(tipo: str = 'last_hour') -> List[Dict]:
         
         print(f"📡 Descargando CSV MITECO: {url}")
         response = requests.get(url, verify=False, timeout=15)
-        response.raise_for_status()
+        response.encoding = 'utf-8'  # ← FORZAR UTF-8
         
         # Parsear CSV
-        csv_text = response.text
-        csv_data = StringIO(csv_text)
+        csv_content = response.content.decode('utf-8')
+        csv_data = StringIO(csv_content)
         reader = csv.DictReader(csv_data)
         
         datos = []
