@@ -5,14 +5,18 @@ import CovidMapRenderer from './CovidMapRenderer';
 import WeatherMapRenderer from './WeatherMapRenderer';
 import ElectionMapRenderer from './ElectionMapRenderer';
 import AirQualityMapRenderer from './AirQualityMapRenderer';
+import HousingMapRenderer from './HousingMapRenderer'; // <-- NUEVO IMPORT
 import { 
   isCovidData, 
   isWeatherData, 
   isElectionData, 
   isAirQualityData,
+  isHousingData, // <-- NUEVO IMPORT
   MapDataType, 
   MapType,
-  AirQualityStation 
+  AirQualityStation,
+  HousingData, // <-- NUEVO IMPORT
+  CCAAValue // <-- NUEVO IMPORT
 } from './types';
 import L from 'leaflet';
 
@@ -20,9 +24,14 @@ interface VanillaMapProps {
   data: MapDataType[];
   height?: string;
   type?: MapType | 'auto';
-  // Nuevas props específicas para calidad del aire
+  // Props específicas para calidad del aire
   useClustering?: boolean;
   selectedPollutant?: string;
+  // NUEVAS props específicas para vivienda
+  selectedMetric?: string;
+  selectedHousingType?: string;
+  selectedCCAA?: string | null;
+  ccaaValues?: CCAAValue[];
 }
 
 // Componente memoizado para evitar re-renders innecesarios
@@ -30,8 +39,14 @@ export default function VanillaMap({
   data, 
   height = '500px', 
   type = 'auto',
+  // Props de calidad del aire
   useClustering = true,
-  selectedPollutant = 'ALL'
+  selectedPollutant = 'ALL',
+  // Props de vivienda
+  selectedMetric = 'indice',
+  selectedHousingType = 'general',
+  selectedCCAA = null,
+  ccaaValues = []
 }: VanillaMapProps) {
   const [mapReady, setMapReady] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
@@ -46,18 +61,17 @@ export default function VanillaMap({
     if ('temperature' in firstItem) return 'weather';
     if ('partido_ganador' in firstItem) return 'elections';
     if ('station_code' in firstItem) return 'air-quality';
+    if ('ccaa_codigo' in firstItem) return 'housing'; // <-- NUEVO
     return 'covid';
   }, [type, data]);
 
   // 2. Memoizar datos filtrados (evita pasar arrays nuevos constantemente)
   const processedData = useMemo(() => {
-    // Si no hay cambios reales, devolver referencia igual
     return [...data];
   }, [data]);
 
   // 3. Callback memoizado para cuando el mapa esté listo
   const handleMapReady = useCallback((map: L.Map, markers: L.LayerGroup) => {
-    // Solo actualizar si realmente ha cambiado
     setMapInstance(prev => {
       if (prev === map) return prev;
       return map;
@@ -137,7 +151,6 @@ export default function VanillaMap({
 
         case 'air-quality':
           if (isAirQualityData(processedData)) {
-            // Determinar automáticamente si usar clustering
             const shouldCluster = useClustering && selectedPollutant === 'ALL';
             
             console.log(`AirQuality config: clustering=${shouldCluster}, pollutant=${selectedPollutant}`);
@@ -154,6 +167,25 @@ export default function VanillaMap({
             );
           }
           break;
+
+        // ============ NUEVO CASO: VIVIENDA ============
+        case 'housing':
+          if (isHousingData(processedData)) {
+            console.log(`Housing config: metric=${selectedMetric}, type=${selectedHousingType}, CCAA=${selectedCCAA}`);
+            
+            return (
+              <HousingMapRenderer 
+                key={`housing-renderer-${selectedMetric}-${selectedHousingType}-${selectedCCAA || 'all'}`}
+                map={mapInstance} 
+                data={processedData as HousingData[]}
+                ccaaValues={ccaaValues}
+                selectedMetric={selectedMetric}
+                selectedHousingType={selectedHousingType}
+                selectedCCAA={selectedCCAA}
+              />
+            );
+          }
+          break;
       }
     } catch (error) {
       console.error('Error renderizando mapa:', error);
@@ -161,16 +193,28 @@ export default function VanillaMap({
     }
 
     return null;
-  }, [shouldRender, dataType, processedData, mapInstance, markersInstance, useClustering, selectedPollutant]);
+  }, [
+    shouldRender, 
+    dataType, 
+    processedData, 
+    mapInstance, 
+    markersInstance, 
+    useClustering, 
+    selectedPollutant,
+    // Nuevas dependencias para housing
+    selectedMetric,
+    selectedHousingType,
+    selectedCCAA,
+    ccaaValues
+  ]);
 
   return (
     <div style={{ position: 'relative', height, width: '100%' }}>
       <MapBase 
-        key={`map-base-${height}`} // Key única para forzar recreación si cambia altura
+        key={`map-base-${height}-${dataType}`} // Incluir dataType en la key
         onMapReady={handleMapReady} 
-        height={height} 
-      />
-      
+        height={height}
+      />      
       {renderDataRenderer}
     </div>
   );

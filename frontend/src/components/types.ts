@@ -1,4 +1,4 @@
-// src/components/types.ts (versión completa corregida)
+// src/components/types.ts
 export interface CovidLocation {
   id?: number
   lat: number
@@ -119,6 +119,42 @@ export interface AirQualityStats {
   is_mock_data: boolean;
 }
 
+// ============= VIVIENDA =============
+// ============= VIVIENDA =============
+export interface HousingData {
+  periodo: string;
+  anio: number;
+  trimestre: number;
+  ccaa_codigo: string;
+  ccaa_nombre: string;
+  tipo_vivienda: string;
+  metrica: string;
+  valor: number | null;
+}
+
+export interface HousingFilters {
+  anio_desde: number;
+  anio_hasta: number;
+  trimestre: number;
+}
+
+export interface HousingStats {
+  periodo_min: string;
+  periodo_max: string;
+  total_records: number;
+  metricas_disponibles: string[];
+  tipos_vivienda_disponibles: string[];
+}
+
+// Para el mapa coroplético
+export interface CCAAValue {
+  ccaa_codigo: string;
+  ccaa_nombre: string;
+  valor: number;
+  periodo: string;
+  color?: string;
+}
+
 // Alias para compatibilidad
 export type AirQualityStationFull = AirQualityStation;
 
@@ -128,8 +164,9 @@ export type MapDataType =
   | WeatherLocation 
   | ElectionLocation 
   | AirQualityStation
-  | AirQualityStationLight;
-export type MapType = 'covid' | 'weather' | 'elections' | 'air-quality';
+  | AirQualityStationLight
+  | HousingData;
+export type MapType = 'covid' | 'weather' | 'elections' | 'air-quality' | 'housing';
 
 // Type guards
 export function isWeatherData(data: MapDataType[]): data is WeatherLocation[] {
@@ -154,4 +191,8 @@ export function isAirQualityLightData(data: MapDataType[]): data is AirQualitySt
   if (data.length === 0) return false;
   const item = data[0];
   return 'name' in item && 'station_code' in item && 'last_aqi' in item && !('available_pollutants' in item);
+}
+
+export function isHousingData(data: MapDataType[]): data is HousingData[] {
+  return data.length > 0 && 'ccaa_codigo' in data[0] && 'periodo' in data[0];
 }
