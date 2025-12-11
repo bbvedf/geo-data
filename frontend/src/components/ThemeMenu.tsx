@@ -89,10 +89,9 @@ const ThemeMenu = ({ theme, setTheme }: ThemeMenuProps) => {
           <button 
             className={styles.menuItem}
             onClick={() => {
-              // navigate('/dataset/housing-prices'); // Descomentar cuando exista
+              navigate('/dataset/housing');
               setIsOpen(false);
-            }}
-            disabled // Temporal
+            }}            
           >
             <i className="bi bi-house-door-fill"></i>
             Precios Vivienda
