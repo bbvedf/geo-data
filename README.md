@@ -121,6 +121,9 @@ geo-data/
 - `GET /air-quality/station/{station_id}"` - Obtener datos completos de una estación específica  
 - `GET /air-quality/stats"` - Estadísticas de calidad del aire en España  
 - `GET /air-quality/pollutants` - Información sobre los contaminantes medidos  
+- `GET /housing/data` - Datos filtrados y paginados
+- `GET /housing/metadata` - Metadatos del dataset  
+- `GET /housing/health` - Health check del servicio
 - `GET /api/analysis/summary` - Análisis básico  
 - `GET /api/docs` - Swagger UI interactivo  
 
