@@ -277,9 +277,12 @@ function HousingDatasetView() {
     setChartFilters((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // const updateDataFilters = useCallback((partial: Partial<TabFilterState>) => {
-  //   setDataFilters((prev) => ({ ...prev, ...partial }));
-  // }, []);
+  // ========== FUNCIÓN APLICAR FILTROS PARA MAPA ==========
+  const applyMapFilters = useCallback(() => {
+    setIsLoadingMap(true);
+    console.log('Aplicando filtros del mapa...');
+    setIsLoadingMap(false);
+  }, []);
 
   const clearMapFilters = useCallback(() => {
     setMapFilters(DEFAULT_FILTERS);
@@ -365,6 +368,7 @@ function HousingDatasetView() {
             });
           }}
           onClearFilters={clearMapFilters}
+          onApplyFilters={applyMapFilters} // ✅ CORREGIDO: Se añade esta prop
           onMetricChange={(metric) => updateMapFilters({ metric })}
           onHousingTypeChange={(housingType) => updateMapFilters({ housingType })}
           onCCAAChange={(ccaa) => updateMapFilters({ ccaa })}

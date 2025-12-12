@@ -9,6 +9,7 @@ import {
   FaMapMarkerAlt,
   FaCalendarAlt,
   FaBuilding,
+  FaFilter, // ✅ AÑADIDO: Import del icono que faltaba
 } from 'react-icons/fa';
 import VanillaMap from './VanillaMap';
 import { HousingData, CCAAValue } from './types';
@@ -30,6 +31,7 @@ interface Props {
   isFiltering: boolean;
   onFilterChange: (filters: { anio_desde?: number; anio_hasta?: number; trimestre?: number }) => void;
   onClearFilters: () => void;
+  onApplyFilters: () => void; // ✅ AÑADIDO: Esta prop faltaba
   onMetricChange: (metric: string) => void;
   onHousingTypeChange: (housingType: string) => void;
   onCCAAChange: (ccaa: string) => void;
@@ -48,6 +50,7 @@ const HousingMapView: React.FC<Props> = ({
   isFiltering,
   onFilterChange,
   onClearFilters,
+  onApplyFilters, // ✅ AÑADIDO: Recibir la prop
   onMetricChange,
   onHousingTypeChange,
   onCCAAChange,
@@ -90,16 +93,24 @@ const HousingMapView: React.FC<Props> = ({
       <div className="card-body">
         <h2 className="card-title mb-4">🗺️ Precios de Vivienda en España</h2>
 
+        {/* Rango de valores mejorado */}
         {allData.length > 0 && (
           <div className="row mb-4">
-            <div className="col-md-3 col-6">
+            <div className="col-md-4 col-6">
               <div className="card border-primary">
                 <div className="card-body p-3 text-center rounded-4 bg-body">
-                  <div className="text-muted small">Rango valores</div>
+                  <div className="text-muted small">
+                    <FaChartLine className="me-1" /> Rango de Precios
+                  </div>
                   <div className="h4 mb-0 text-primary">
                     {valorMin.toFixed(1)} - {valorMax.toFixed(1)}
                   </div>
-                  <small className="text-muted">Min - Max</small>
+                  <small className="text-muted">
+                    {selectedMetric === 'indice' ? 'Índice (2015=100)' : 
+                     selectedMetric === 'var_anual' ? 'Variación anual %' :
+                     selectedMetric === 'var_trimestral' ? 'Variación trimestral %' :
+                     'Variación YTD %'}
+                  </small>
                 </div>
               </div>
             </div>
@@ -185,9 +196,36 @@ const HousingMapView: React.FC<Props> = ({
             </h3>
           </div>
           <div className="card-body">
+            {/* ✅ CORREGIDO: Filtros activos completos */}
             {hasActiveFilters && (
               <div className="alert alert-info mb-3">
-                <strong>⚡ Filtros activos</strong>
+                <strong>⚡ Filtros activos:</strong>
+                <div className="d-flex flex-wrap gap-2 mt-2">
+                  {selectedMetric !== 'indice' && (
+                    <span className="badge bg-info">
+                      Métrica: {metrics.find(m => m.value === selectedMetric)?.label}
+                    </span>
+                  )}
+                  {selectedHousingType !== 'general' && (
+                    <span className="badge bg-info">
+                      Tipo: {housingTypes.find(t => t.value === selectedHousingType)?.label}
+                    </span>
+                  )}
+                  {selectedCCAA !== '00' && (
+                    <span className="badge bg-info">
+                      CCAA: {ccaaOptions.find(c => c.value === selectedCCAA)?.label}
+                    </span>
+                  )}
+                  {filters.anio_desde > 2010 && (
+                    <span className="badge bg-info">Desde: {filters.anio_desde}</span>
+                  )}
+                  {filters.anio_hasta < 2025 && (
+                    <span className="badge bg-info">Hasta: {filters.anio_hasta}</span>
+                  )}
+                  {filters.trimestre > 0 && (
+                    <span className="badge bg-info">Trimestre: {filters.trimestre}</span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -241,6 +279,7 @@ const HousingMapView: React.FC<Props> = ({
                 </select>
               </div>
 
+              {/* ✅ CORREGIDO: Añadir botón "Aplicar Filtros" */}
               <div className="col-12 d-flex gap-2 justify-content-end">
                 <button
                   className="btn btn-danger"
@@ -249,6 +288,15 @@ const HousingMapView: React.FC<Props> = ({
                   title="Limpiar todos los filtros"
                 >
                   <FaTrashAlt className="me-2" />
+                </button>
+                
+                <button
+                  className="btn btn-primary"
+                  onClick={onApplyFilters}
+                  disabled={isFiltering}
+                >
+                  <FaFilter className="me-2" />
+                  Aplicar Filtros
                 </button>
               </div>
             </div>

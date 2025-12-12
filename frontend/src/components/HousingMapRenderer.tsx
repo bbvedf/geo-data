@@ -47,7 +47,7 @@ const getGeoJSONStyle = (feature: any, ccaaValues: CCAAValue[], metric: string) 
     fillColor: getColorForValue(ccaaData?.valor || null, metric),
     weight: 2,
     opacity: 1,
-    color: 'white',
+    color: 'white', // ⭐ Color inicial BLANCO
     dashArray: '3',
     fillOpacity: 0.7,
     className: 'ccaa-polygon'
@@ -84,27 +84,6 @@ const createTooltipContent = (ccaaData: CCAAValue | undefined, metric: string): 
   `;
 };
 
-// Función para resaltar una CCAA específica
-const highlightCCAA = (layer: L.Layer, _ccaaCode: string, isSelected: boolean) => {
-  if (isSelected && layer instanceof L.Path) {
-    layer.setStyle({
-      weight: 4,
-      color: '#333',
-      fillOpacity: 0.9
-    });
-    
-    if (!(layer as any)._originalStyle) {
-      (layer as any)._originalStyle = layer.options;
-    }
-  } else if (layer instanceof L.Path) {
-    const originalStyle = (layer as any)._originalStyle || layer.options;
-    layer.setStyle(originalStyle);
-  }
-  
-  if (layer instanceof L.Path) {
-    layer.bringToFront();
-  }
-};
 
 export default function HousingMapRenderer({ 
   map, 
@@ -206,7 +185,7 @@ export default function HousingMapRenderer({
       
       grades.forEach(grade => {
         html += `
-          <div style="display: flex; align-items: center; margin-bottom: 4px;">
+          <div style="display: flex; align-items-center; margin-bottom: 4px;">
             <div style="width: 20px; height: 20px; background: ${grade.color}; margin-right: 8px; border: 1px solid #666;"></div>
             <span style="font-size: 12px;">${grade.label}</span>
           </div>
@@ -265,7 +244,7 @@ export default function HousingMapRenderer({
             className: 'ccaa-tooltip'
           });
           
-          // Eventos de mouse
+          // Eventos de mouse - ⭐ CORREGIDO: Manejo correcto del hover
           layer.on({
             mouseover: (e) => {
               const layer = e.target;
@@ -280,8 +259,28 @@ export default function HousingMapRenderer({
             },
             mouseout: (e) => {
               const layer = e.target;
-              const isSelected = selectedCCAA === ccaaCode;
-              highlightCCAA(layer, ccaaCode, isSelected);
+              if (layer instanceof L.Path) {
+                // ⭐ CORREGIDO: Restaurar estilo original
+                layer.setStyle({
+                  fillColor: getColorForValue(ccaaData?.valor || null, selectedMetric),
+                  weight: 2,
+                  opacity: 1,
+                  color: 'white',
+                  dashArray: '3',
+                  fillOpacity: 0.7
+                });
+                
+                // Si está seleccionada, aplicar estilo de selección
+                if (selectedCCAA === ccaaCode) {
+                  layer.setStyle({
+                    weight: 4,
+                    color: '#333',
+                    fillOpacity: 0.9
+                  });
+                }
+                
+                layer.bringToFront();
+              }
             },
             click: () => {
               console.log(`CCAA clickeada: ${ccaaName} (${ccaaCode})`);
@@ -290,7 +289,14 @@ export default function HousingMapRenderer({
           
           // Resaltar si está seleccionada
           if (selectedCCAA === ccaaCode) {
-            highlightCCAA(layer, ccaaCode, true);
+            if (layer instanceof L.Path) {
+              layer.setStyle({
+                weight: 4,
+                color: '#333',
+                fillOpacity: 0.9
+              });
+              layer.bringToFront();
+            }
           }
         }
       });
