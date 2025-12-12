@@ -10,6 +10,7 @@ import {
   FaChartBar,
   FaMapMarkedAlt,
   FaDatabase,
+  FaTrashAlt,
 } from 'react-icons/fa';
 
 // ============================================================================
@@ -441,8 +442,9 @@ function HousingDatasetView() {
                       className="btn btn-danger"
                       onClick={clearChartFilters}
                       disabled={isLoadingChart}
+                      title="Limpiar todos los filtros"
                     >
-                      🗑️ Limpiar filtros
+                      <FaTrashAlt className="me-2" />
                     </button>
                   </div>
                 </div>

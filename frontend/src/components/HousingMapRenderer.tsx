@@ -251,7 +251,7 @@ export default function HousingMapRenderer({
               if (layer instanceof L.Path) {
                 layer.setStyle({
                   weight: 3,
-                  color: '#666',
+                  color: '#FF7F27',
                   fillOpacity: 0.85
                 });
                 layer.bringToFront();
@@ -274,7 +274,7 @@ export default function HousingMapRenderer({
                 if (selectedCCAA === ccaaCode) {
                   layer.setStyle({
                     weight: 4,
-                    color: '#333',
+                    color: '#FF7F27',
                     fillOpacity: 0.9
                   });
                 }

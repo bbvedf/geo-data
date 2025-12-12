@@ -9,6 +9,9 @@ import {
   FaMapMarkerAlt,
   FaCalendarAlt,
   FaBuilding,
+  FaArrowsAltH,
+  FaArrowRight,
+  FaMapMarkedAlt,
   FaFilter, // ✅ AÑADIDO: Import del icono que faltaba
 } from 'react-icons/fa';
 import VanillaMap from './VanillaMap';
@@ -96,28 +99,146 @@ const HousingMapView: React.FC<Props> = ({
         {/* Rango de valores mejorado */}
         {allData.length > 0 && (
           <div className="row mb-4">
-            <div className="col-md-4 col-6">
-              <div className="card border-primary">
-                <div className="card-body p-3 text-center rounded-4 bg-body">
-                  <div className="text-muted small">
-                    <FaChartLine className="me-1" /> Rango de Precios
+            {/* Tarjeta 1: Rango visual con barra */}
+            <div className="col-md-5">
+              <div className="card border-primary h-100" style={{
+                border: '2px solid var(--bs-primary)',
+                //borderRadius: '12px',
+                overflow: 'hidden'
+              }}>
+                <div className="card-body">
+                  <h6 className="card-title text-primary">
+                    <FaArrowsAltH className="me-2" /> Distribución por CCAA
+                  </h6>                  
+                  <div className="d-flex justify-content-between mb-3">
+                    <div className="text-center">
+                      <div className="display-6 text-primary">{valorMin.toFixed(1)}</div>
+                      <small className="text-muted">Mínimo</small>
+                      <div className="small">
+                        {ccaaValues.find(v => v.valor === valorMin)?.ccaa_nombre || 'N/A'}
+                      </div>
+                    </div>
+                    
+                    <div className="d-flex align-items-center">
+                      <FaArrowRight className="text-muted mx-3" size={24} />
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="display-6 text-primary">{valorMax.toFixed(1)}</div>
+                      <small className="text-muted">Máximo</small>
+                      <div className="small">
+                        {ccaaValues.find(v => v.valor === valorMax)?.ccaa_nombre || 'N/A'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="h4 mb-0 text-primary">
-                    {valorMin.toFixed(1)} - {valorMax.toFixed(1)}
+                  
+                  {/* Barra de rango */}
+                  <div className="mt-3">
+                    <div className="d-flex justify-content-between small text-muted mb-1">
+                      <span>Más bajo</span>
+                      <span>Diferencia: {(valorMax - valorMin).toFixed(1)}</span>
+                      <span>Más alto</span>
+                    </div>
+                    <div className="progress" style={{height: '10px'}}>
+                      <div 
+                        className="progress-bar bg-primary" 
+                        style={{width: '100%'}}
+                      ></div>
+                    </div>
                   </div>
-                  <small className="text-muted">
-                    {selectedMetric === 'indice' ? 'Índice (2015=100)' : 
-                     selectedMetric === 'var_anual' ? 'Variación anual %' :
-                     selectedMetric === 'var_trimestral' ? 'Variación trimestral %' :
-                     'Variación YTD %'}
-                  </small>
+                </div>
+              </div>
+            </div>                
+            {/* Tarjeta 2: Contexto del mapa */}
+            <div className="col-md-7">                
+              <div className="card border-primary h-100" style={{
+                border: '2px solid var(--bs-primary)',
+                //borderRadius: '12px',
+                overflow: 'hidden'
+              }}>
+                <div className="card-body">
+                  <h6 className="card-title text-primary">
+                    <FaMapMarkedAlt className="me-2" /> Vista del Mapa
+                  </h6>
+                  
+                  <div className="row">
+                    <div className="col-6">
+                      <div className="mb-3">
+                        <div className="small text-muted">Métrica mostrada</div>
+                        <div className="h5">
+                          {metrics.find(m => m.value === selectedMetric)?.label}
+                        </div>
+                        <div className="small text-muted">
+                          {selectedMetric === 'indice' ? 'Base 2015=100' : 
+                          selectedMetric.includes('var') ? 'Variación porcentual' : 'Valor absoluto'}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="small text-muted">Tipo de vivienda</div>
+                        <div className="h5">
+                          {housingTypes.find(t => t.value === selectedHousingType)?.label}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="col-6">
+                      <div className="mb-3">
+                        <div className="small text-muted">Área geográfica</div>
+                        <div className="h5">
+                          {selectedCCAA === '00' 
+                            ? 'Toda España' 
+                            : ccaaOptions.find(c => c.value === selectedCCAA)?.label}
+                        </div>
+                        <div className="small text-muted">
+                          {selectedCCAA === '00' 
+                            ? `${ccaaValues.length} CCAA representadas` 
+                            : 'CCAA específica'}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="small text-muted">Periodo más reciente</div>
+                        <div className="h5">
+                          {allData[0]?.periodo || 'N/A'}
+                        </div>
+                        <div className="small text-muted">
+                          {filteredData.length} registros visibles
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Pequeña leyenda de colores */}
+                  <div className="mt-3 pt-3 border-top">
+                    <div className="small text-muted mb-1">Leyenda de colores:</div>
+                    <div className="d-flex gap-2">
+                      {selectedMetric === 'indice' ? (
+                        <>
+                          <span className="badge" style={{backgroundColor: '#a8d5e2'}}>Bajo</span>
+                          <span className="badge" style={{backgroundColor: '#4d9db3'}}>Medio</span>
+                          <span className="badge" style={{backgroundColor: '#075675'}}>Alto</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="badge" style={{backgroundColor: '#d7191c'}}>Bajada</span>
+                          <span className="badge" style={{backgroundColor: '#ffffbf'}}>Estable</span>
+                          <span className="badge" style={{backgroundColor: '#1a9641'}}>Subida</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="card border-primary mb-4 bg-body">
+        <div className="card border-primary mb-4" style={{
+          border: '2px solid var(--bs-primary)',
+          //borderRadius: '12px',
+          overflow: 'hidden'
+          }}>
           <div className="card-header bg-light">
             <h3 className="h5 mb-0">
               <FaHome className="me-2" /> Configuración del Mapa
@@ -188,7 +309,11 @@ const HousingMapView: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="card border-primary mb-4 bg-body">
+        <div className="card border-primary mb-4" style={{
+          border: '2px solid var(--bs-primary)',
+          //borderRadius: '12px',
+          overflow: 'hidden'
+          }}>
           <div className="card-header bg-light">
             <h3 className="h5 mb-0">
               <FaCalendarAlt className="me-2" /> Filtros Temporales
