@@ -1,15 +1,13 @@
 // frontend/src/components/HousingTable.tsx
 // Pestaña "data"
 import React, { useState } from 'react';
-import { 
-  FaSearch, 
-  FaFilter, 
-  FaTimes, 
-  FaDownload, 
+import {
+  FaTimes,
+  FaDownload,
   FaCalendarAlt,
   FaBuilding,
   FaChartLine,
-  FaCity 
+  FaCity,
 } from 'react-icons/fa';
 import { HousingData } from './types';
 
@@ -18,14 +16,19 @@ interface Props {
   selectedMetric: string;
   selectedHousingType: string;
   selectedCCAA: string;
-  metrics: Array<{value: string, label: string, description?: string}>;
-  housingTypes: Array<{value: string, label: string, description?: string}>;
-  ccaaOptions: Array<{value: string, label: string}>;
-  onFilterChange: (filters: { 
-    anio_desde?: number; 
-    anio_hasta?: number; 
-    trimestre?: number 
-  }) => void;
+  filters: {
+    anio_desde: number;
+    anio_hasta: number;
+    trimestre: number;
+  };
+  metrics: Array<{ value: string; label: string; description?: string }>;
+  housingTypes: Array<{ value: string; label: string; description?: string }>;
+  ccaaOptions: Array<{ value: string; label: string }>;
+  isFiltering: boolean;
+  onFilterChange: (filters: { anio_desde?: number; anio_hasta?: number; trimestre?: number }) => void;
+  onMetricChange: (metric: string) => void;
+  onHousingTypeChange: (housingType: string) => void;
+  onCCAAChange: (ccaa: string) => void;
   onClearFilters: () => void;
   onExport?: (data: HousingData[]) => void;
 }
@@ -35,123 +38,36 @@ const HousingTable: React.FC<Props> = ({
   selectedMetric,
   selectedHousingType,
   selectedCCAA,
+  filters,
   metrics,
   housingTypes,
   ccaaOptions,
+  isFiltering,
   onFilterChange,
+  onMetricChange,
+  onHousingTypeChange,
+  onCCAAChange,
   onClearFilters,
-  onExport
+  onExport,
 }) => {
-  const [localFilters, setLocalFilters] = useState({
-    ccaa: '',
-    tipo_vivienda: '',
-    periodo: '',
-    anio: '',
-    trimestre: ''
-  });
-  
   const [visibleCount, setVisibleCount] = useState(50);
 
-  // Filtros aplicados localmente
-  const filteredData = data.filter(item => {
-    if (localFilters.ccaa && item.ccaa_codigo !== localFilters.ccaa) return false;
-    if (localFilters.tipo_vivienda && item.tipo_vivienda !== localFilters.tipo_vivienda) return false;
-    if (localFilters.periodo && !item.periodo.includes(localFilters.periodo)) return false;
-    if (localFilters.anio && item.anio.toString() !== localFilters.anio) return false;
-    if (localFilters.trimestre && item.trimestre.toString() !== localFilters.trimestre) return false;
-    return true;
-  });
+  const getMetricLabel = () => metrics.find((m) => m.value === selectedMetric)?.label || selectedMetric;
+  const getHousingTypeLabel = () =>
+    housingTypes.find((t) => t.value === selectedHousingType)?.label || selectedHousingType;
+  const getCCAALabel = () => ccaaOptions.find((c) => c.value === selectedCCAA)?.label || selectedCCAA;
 
-  const handleFilterChange = (filterName: keyof typeof localFilters, value: string) => {
-    const updated = { ...localFilters, [filterName]: value };
-    setLocalFilters(updated);
-    
-    // Auto-aplicar filtros para algunos campos
-    if (filterName === 'anio' && value) {
-      onFilterChange({ anio_desde: parseInt(value), anio_hasta: parseInt(value) });
+  const handleExport = () => {
+    if (onExport) {
+      onExport(data);
     }
   };
-
-  const clearAllFilters = () => {
-    setLocalFilters({
-      ccaa: '',
-      tipo_vivienda: '',
-      periodo: '',
-      anio: '',
-      trimestre: ''
-    });
-    onClearFilters();
-  };
-
-  const clearSingleFilter = (filterName: keyof typeof localFilters) => {
-    setLocalFilters(prev => ({ ...prev, [filterName]: '' }));
-    
-    // Si era filtro de año, resetear filtros temporales
-    if (filterName === 'anio') {
-      onFilterChange({ anio_desde: 2020, anio_hasta: 2025 });
-    }
-  };
-  
-  // Función para exportar datos
-  const exportData = (dataToExport: HousingData[]) => {
-    const exportData = dataToExport.map(item => ({
-      Periodo: item.periodo,
-      Año: item.anio,
-      Trimestre: item.trimestre,
-      CCAA: item.ccaa_nombre,
-      'Código CCAA': item.ccaa_codigo,
-      'Tipo Vivienda': item.tipo_vivienda,
-      Métrica: item.metrica,
-      Valor: item.valor?.toFixed(2) || 'N/A',
-      'Tipo Métrica': selectedMetric === 'indice' ? 'Índice' : 
-                      selectedMetric === 'var_anual' ? 'Var. Anual' :
-                      selectedMetric === 'var_trimestral' ? 'Var. Trimestral' : 'Var. YTD'
-    }));
-    
-    // Convertir a CSV
-    const headers = Object.keys(exportData[0]).join(',');
-    const rows = exportData.map(row => 
-      Object.values(row).map(value => 
-        typeof value === 'string' && value.includes(',') ? `"${value}"` : value
-      ).join(',')
-    );
-    
-    const csvContent = [headers, ...rows].join('\n');
-    
-    // Crear y descargar archivo
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `precios-vivienda_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log(`📊 Exportados ${dataToExport.length} registros`);
-  };
-
-  // Obtener etiquetas para mostrar
-  const getMetricLabel = () => metrics.find(m => m.value === selectedMetric)?.label || selectedMetric;
-  const getHousingTypeLabel = () => housingTypes.find(t => t.value === selectedHousingType)?.label || selectedHousingType;
-  const getCCAALabel = () => ccaaOptions.find(c => c.value === selectedCCAA)?.label || selectedCCAA;
-
-  // Obtener años únicos para el selector
-  const uniqueYears = Array.from(new Set(data.map(item => item.anio))).sort((a, b) => b - a);
-  const uniqueTrimestres = Array.from(new Set(data.map(item => item.trimestre))).sort();
-  const uniqueCCAAs = Array.from(new Set(data
-    .map(item => ({ codigo: item.ccaa_codigo, nombre: item.ccaa_nombre }))
-    .filter(item => item.codigo && item.codigo !== '00')
-  ));
-  const uniqueTipos = Array.from(new Set(data.map(item => item.tipo_vivienda)));
 
   return (
     <div className="card shadow">
       <div className="card-body">
         <h2 className="card-title mb-4">📋 Datos de Precios de Vivienda</h2>
-        
-        {/* RESUMEN DE CONFIGURACIÓN ACTUAL */}
+
         <div className="alert alert-info mb-3">
           <strong>⚙️ Configuración actual:</strong>
           <div className="d-flex flex-wrap gap-2 mt-2">
@@ -169,253 +85,155 @@ const HousingTable: React.FC<Props> = ({
             </span>
             <span className="badge bg-secondary">
               <FaCalendarAlt className="me-1" />
-              {data.length > 0 
-                ? `${data[0].periodo} - ${data[data.length-1].periodo}`
-                : 'Sin datos'
-              }
+              {data.length > 0 ? `${data[0].periodo} - ${data[data.length - 1].periodo}` : 'Sin datos'}
             </span>
           </div>
         </div>
-        
-        {/* FILTROS RÁPIDOS - AUTO-APLICADOS */}
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <FaCity />
-              </span>
-              <select
-                className="form-select"
-                value={localFilters.ccaa}
-                onChange={(e) => handleFilterChange('ccaa', e.target.value)}
-              >
-                <option value="">Todas las CCAA</option>
-                {uniqueCCAAs.map(ccaa => (
-                  <option key={ccaa.codigo} value={ccaa.codigo}>
-                    {ccaa.nombre}
-                  </option>
-                ))}
-              </select>
-              {localFilters.ccaa && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => clearSingleFilter('ccaa')}
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
+
+        <div className="card border-primary mb-4 bg-body">
+          <div className="card-header bg-light">
+            <h5 className="h5 mb-0">⚙️ Filtros de Datos (Independientes)</h5>
           </div>
-          
-          <div className="col-md-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <FaBuilding />
-              </span>
-              <select
-                className="form-select"
-                value={localFilters.tipo_vivienda}
-                onChange={(e) => handleFilterChange('tipo_vivienda', e.target.value)}
-              >
-                <option value="">Todos los tipos</option>
-                {uniqueTipos.map(tipo => (
-                  <option key={tipo} value={tipo}>
-                    {tipo}
-                  </option>
-                ))}
-              </select>
-              {localFilters.tipo_vivienda && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => clearSingleFilter('tipo_vivienda')}
+          <div className="card-body">
+            <div className="row g-3">
+              <div className="col-md-4">
+                <label className="form-label">Métrica</label>
+                <select
+                  className="form-select"
+                  value={selectedMetric}
+                  onChange={(e) => onMetricChange(e.target.value)}
+                  disabled={isFiltering}
                 >
-                  <FaTimes />
+                  {metrics.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label">Tipo de Vivienda</label>
+                <select
+                  className="form-select"
+                  value={selectedHousingType}
+                  onChange={(e) => onHousingTypeChange(e.target.value)}
+                  disabled={isFiltering}
+                >
+                  {housingTypes.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label">Área Geográfica</label>
+                <select
+                  className="form-select"
+                  value={selectedCCAA}
+                  onChange={(e) => onCCAAChange(e.target.value)}
+                  disabled={isFiltering}
+                >
+                  {ccaaOptions.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label">
+                  Año desde: <strong>{filters.anio_desde}</strong>
+                </label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min="2007"
+                  max="2025"
+                  value={filters.anio_desde}
+                  onChange={(e) =>
+                    onFilterChange({ ...filters, anio_desde: parseInt(e.target.value) })
+                  }
+                  disabled={isFiltering}
+                />
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label">
+                  Año hasta: <strong>{filters.anio_hasta}</strong>
+                </label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min="2007"
+                  max="2025"
+                  value={filters.anio_hasta}
+                  onChange={(e) =>
+                    onFilterChange({ ...filters, anio_hasta: parseInt(e.target.value) })
+                  }
+                  disabled={isFiltering}
+                />
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label">Trimestre</label>
+                <select
+                  className="form-select"
+                  value={filters.trimestre}
+                  onChange={(e) =>
+                    onFilterChange({ ...filters, trimestre: parseInt(e.target.value) })
+                  }
+                  disabled={isFiltering}
+                >
+                  <option value="0">Todos</option>
+                  <option value="1">Q1</option>
+                  <option value="2">Q2</option>
+                  <option value="3">Q3</option>
+                  <option value="4">Q4</option>
+                </select>
+              </div>
+
+              <div className="col-md-3 d-flex align-items-end gap-2">
+                <button
+                  className="btn btn-danger flex-grow-1"
+                  onClick={onClearFilters}
+                  disabled={isFiltering}
+                >
+                  🗑️ Limpiar
                 </button>
-              )}
+              </div>
             </div>
-          </div>
-          
-          <div className="col-md-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <FaCalendarAlt />
-              </span>
-              <select
-                className="form-select"
-                value={localFilters.anio}
-                onChange={(e) => handleFilterChange('anio', e.target.value)}
-              >
-                <option value="">Todos los años</option>
-                {uniqueYears.map(year => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-              {localFilters.anio && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => clearSingleFilter('anio')}
-                >
-                  <FaTimes />
-                </button>
-              )}
+
+            <div className="mt-3 pt-3 border-top">
+              <small className="text-muted">
+                📊 Datos cargados: <strong>{data.length}</strong> registros
+              </small>
             </div>
           </div>
         </div>
-        
-        {/* FILTROS SECUNDARIOS */}
-        <div className="row g-3 mb-3">
-          <div className="col-md-6">
-            <div className="input-group">
-              <span className="input-group-text">
-                <FaSearch />
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar periodo (ej: 2025T3)..."
-                value={localFilters.periodo}
-                onChange={(e) => handleFilterChange('periodo', e.target.value)}
-              />
-              {localFilters.periodo && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => clearSingleFilter('periodo')}
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-          
-          <div className="col-md-6">
-            <div className="input-group">
-              <span className="input-group-text">
-                <FaFilter />
-              </span>
-              <select
-                className="form-select"
-                value={localFilters.trimestre}
-                onChange={(e) => handleFilterChange('trimestre', e.target.value)}
-              >
-                <option value="">Todos los trimestres</option>
-                {uniqueTrimestres.map(trim => (
-                  <option key={trim} value={trim}>
-                    {trim}º Trimestre
-                  </option>
-                ))}
-              </select>
-              {localFilters.trimestre && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => clearSingleFilter('trimestre')}
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* RESUMEN DE FILTROS ACTIVOS */}
-        {(localFilters.ccaa || localFilters.tipo_vivienda || localFilters.periodo || 
-          localFilters.anio || localFilters.trimestre) && (
-          <div className="alert alert-warning mb-3">
-            <strong>🔍 Filtros aplicados:</strong>
-            <div className="d-flex flex-wrap gap-2 mt-2 align-items-center">
-              {localFilters.ccaa && (
-                <span className="badge bg-info">
-                  CCAA: {uniqueCCAAs.find(c => c.codigo === localFilters.ccaa)?.nombre || localFilters.ccaa}
-                  <button 
-                    className="btn btn-sm btn-link text-white p-0 ms-1"
-                    onClick={() => clearSingleFilter('ccaa')}
-                  >
-                    <FaTimes />
-                  </button>
-                </span>
-              )}
-              {localFilters.tipo_vivienda && (
-                <span className="badge bg-info">
-                  Tipo: {localFilters.tipo_vivienda}
-                  <button 
-                    className="btn btn-sm btn-link text-white p-0 ms-1"
-                    onClick={() => clearSingleFilter('tipo_vivienda')}
-                  >
-                    <FaTimes />
-                  </button>
-                </span>
-              )}
-              {localFilters.anio && (
-                <span className="badge bg-info">
-                  Año: {localFilters.anio}
-                  <button 
-                    className="btn btn-sm btn-link text-white p-0 ms-1"
-                    onClick={() => clearSingleFilter('anio')}
-                  >
-                    <FaTimes />
-                  </button>
-                </span>
-              )}
-              {localFilters.trimestre && (
-                <span className="badge bg-info">
-                  Trimestre: {localFilters.trimestre}
-                  <button 
-                    className="btn btn-sm btn-link text-white p-0 ms-1"
-                    onClick={() => clearSingleFilter('trimestre')}
-                  >
-                    <FaTimes />
-                  </button>
-                </span>
-              )}
-              {localFilters.periodo && (
-                <span className="badge bg-info">
-                  Periodo: {localFilters.periodo}
-                  <button 
-                    className="btn btn-sm btn-link text-white p-0 ms-1"
-                    onClick={() => clearSingleFilter('periodo')}
-                  >
-                    <FaTimes />
-                  </button>
-                </span>
-              )}
-              <button 
-                className="btn btn-sm btn-outline-warning"
-                onClick={clearAllFilters}
-              >
-                <FaTimes className="me-1" />
-                Limpiar todos los filtros
-              </button>
-            </div>
-          </div>
-        )}
-        
+
         <div className="d-flex justify-content-between mb-3 align-items-center">
           <p className="text-muted mb-0">
-            Mostrando {Math.min(visibleCount, filteredData.length)} de {filteredData.length} registros
-            {selectedCCAA !== '00' && ` (${getCCAALabel()})`}
+            Mostrando {Math.min(visibleCount, data.length)} de {data.length} registros
           </p>
           <div className="d-flex gap-2">
-            <button 
-              className="btn btn-sm btn-outline-primary"
-              onClick={() => onExport ? onExport(filteredData) : exportData(filteredData)}
-              disabled={filteredData.length === 0}
+            <button
+              className="btn btn-sm btn-outline-success"
+              onClick={handleExport}
+              disabled={data.length === 0}
             >
               <FaDownload className="me-1" />
-              Exportar CSV ({filteredData.length})
+              Exportar CSV ({data.length})
             </button>
           </div>
         </div>
-        
-        {/* TABLA DE DATOS */}
+
         <div className="table-responsive" style={{ maxHeight: '500px', overflowY: 'auto' }}>
           <table className="table table-hover table-sm">
-            <thead>
+            <thead className="table-light">
               <tr>
                 <th>Periodo</th>
                 <th>Año</th>
@@ -427,13 +245,13 @@ const HousingTable: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredData.slice(0, visibleCount).map((item, index) => {
+              {data.slice(0, visibleCount).map((item, index) => {
                 const ccaaLabel = item.ccaa_codigo === '00' ? 'Nacional' : item.ccaa_nombre;
                 const valor = item.valor;
                 const isIndex = item.metrica === 'Índice';
                 const isPositive = valor && valor > (isIndex ? 100 : 0);
                 const isNegative = valor && valor < (isIndex ? 100 : 0);
-                
+
                 return (
                   <tr key={index}>
                     <td className="fw-medium">
@@ -450,37 +268,48 @@ const HousingTable: React.FC<Props> = ({
                         {item.ccaa_codigo !== '00' && (
                           <span className="badge bg-primary me-1">CCAA</span>
                         )}
-                        <span className={item.ccaa_codigo === '00' ? 'fw-bold' : ''}>
-                          {ccaaLabel}
-                        </span>
+                        <span className={item.ccaa_codigo === '00' ? 'fw-bold' : ''}>{ccaaLabel}</span>
                       </div>
                     </td>
                     <td>
-                      <small className={
-                        item.tipo_vivienda === 'General' ? 'text-primary' :
-                        item.tipo_vivienda === 'Vivienda nueva' ? 'text-success' :
-                        'text-warning'
-                      }>
+                      <small
+                        className={
+                          item.tipo_vivienda === 'General'
+                            ? 'text-primary'
+                            : item.tipo_vivienda === 'Vivienda nueva'
+                            ? 'text-success'
+                            : 'text-warning'
+                        }
+                      >
                         {item.tipo_vivienda === 'Vivienda segunda mano' ? '2ª Mano' : item.tipo_vivienda}
                       </small>
                     </td>
                     <td>
-                      <small className={
-                        item.metrica === 'Índice' ? 'text-info' :
-                        item.metrica.includes('Variación') ? 'text-danger' : 'text-muted'
-                      }>
-                        {item.metrica.includes('Variación') 
-                          ? item.metrica.replace('Variación ', 'Var. ')
-                          : item.metrica
+                      <small
+                        className={
+                          item.metrica === 'Índice'
+                            ? 'text-info'
+                            : item.metrica.includes('Variación')
+                            ? 'text-danger'
+                            : 'text-muted'
                         }
+                      >
+                        {item.metrica.includes('Variación')
+                          ? item.metrica.replace('Variación ', 'Var. ')
+                          : item.metrica}
                       </small>
                     </td>
                     <td className="text-end">
                       {valor !== null && valor !== undefined ? (
-                        <span className={
-                          isPositive ? 'text-success fw-bold' :
-                          isNegative ? 'text-danger fw-bold' : 'text-muted'
-                        }>
+                        <span
+                          className={
+                            isPositive
+                              ? 'text-success fw-bold'
+                              : isNegative
+                              ? 'text-danger fw-bold'
+                              : 'text-muted'
+                          }
+                        >
                           {isIndex ? valor.toFixed(1) : `${valor.toFixed(1)}%`}
                           {isPositive && !isIndex && ' ↗'}
                           {isNegative && !isIndex && ' ↘'}
@@ -495,86 +324,30 @@ const HousingTable: React.FC<Props> = ({
             </tbody>
           </table>
         </div>
-        
-        {/* PAGINACIÓN MEJORADA */}
-        {filteredData.length > 50 && (
+
+        {data.length > 50 && (
           <div className="d-flex justify-content-between align-items-center mt-3">
-            <small className="text-muted">
-              📋 Mostrando {Math.min(visibleCount, filteredData.length)} de {filteredData.length} registros
-            </small>
-            
+            <small className="text-muted">Mostrando {Math.min(visibleCount, data.length)} de {data.length}</small>
             <div className="d-flex gap-2">
-              {filteredData.length > visibleCount && (
-                <button 
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => setVisibleCount(prev => prev + 50)}
-                >
+              {data.length > visibleCount && (
+                <button className="btn btn-sm btn-outline-primary" onClick={() => setVisibleCount((prev) => prev + 50)}>
                   Mostrar 50 más
                 </button>
               )}
               {visibleCount > 50 && (
-                <button 
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => setVisibleCount(50)}
-                >
+                <button className="btn btn-sm btn-outline-secondary" onClick={() => setVisibleCount(50)}>
                   <FaTimes className="me-1" /> Reducir
                 </button>
               )}
             </div>
           </div>
         )}
-        
-        {/* INFORMACIÓN ADICIONAL */}
-        {filteredData.length === 0 && (
-          <div className="text-center py-4">
-            <p className="text-muted">No hay datos que coincidan con los filtros aplicados.</p>
-            <button 
-              className="btn btn-sm btn-outline-primary"
-              onClick={clearAllFilters}
-            >
-              <FaTimes className="me-1" />
-              Limpiar todos los filtros
-            </button>
+
+        {data.length === 0 && (
+          <div className="text-center py-5">
+            <p className="text-muted">No hay datos con estos filtros.</p>
           </div>
         )}
-        
-        {/* FOOTER INFORMATIVO */}
-        <div className="mt-3 pt-3 border-top small text-muted">
-          <div className="row">
-            <div className="col-md-6">
-              <div className="d-flex align-items-center mb-1">
-                <div className="color-indicator me-2" style={{backgroundColor: '#0d6efd'}}></div>
-                <span>Nacional</span>
-              </div>
-              <div className="d-flex align-items-center mb-1">
-                <div className="color-indicator me-2" style={{backgroundColor: '#198754'}}></div>
-                <span>Vivienda nueva</span>
-              </div>
-              <div className="d-flex align-items-center">
-                <div className="color-indicator me-2" style={{backgroundColor: '#ffc107'}}></div>
-                <span>Segunda mano</span>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="d-flex align-items-center mb-1">
-                <span className="text-success me-2">↗</span>
-                <span>Valores positivos/altos</span>
-              </div>
-              <div className="d-flex align-items-center">
-                <span className="text-danger me-2">↘</span>
-                <span>Valores negativos/bajos</span>
-              </div>
-            </div>
-          </div>
-          <style>{`
-            .color-indicator {
-              width: 12px;
-              height: 12px;
-              border-radius: 2px;
-              border: 1px solid rgba(0,0,0,0.1);
-            }
-          `}</style>
-        </div>
       </div>
     </div>
   );
