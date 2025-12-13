@@ -10,7 +10,12 @@ from datetime import datetime, date
 import json
 import unicodedata
 import re
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
+## Acceso a bd.
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models.housing import HousingINECache, HousingINESnapshot  
+from app.services.housing_cache import HousingCacheService
 
 # ============= FUNCIONES DE LIMPIEZA =============
 def limpiar_string(s: str) -> str:
@@ -209,9 +214,10 @@ async def get_housing_data(
     anio_hasta: Optional[int] = Query(None),
     limit: int = Query(100),
     offset: int = Query(0),
-    debug: bool = Query(False)
+    debug: bool = Query(False),
+    db: Session = Depends(get_db)  # ← AÑADE ESTO
 ):
-    """Obtiene datos de precios de vivienda"""
+    """Obtiene datos de precios de vivienda (con caché en Postgres)"""
     try:
         metrica_real = API_METRICA_MAP.get(metric.lower())
         tipo_real = API_TIPO_MAP.get(housing_type.lower())
@@ -219,17 +225,74 @@ async def get_housing_data(
         if not metrica_real or not tipo_real:
             raise HTTPException(status_code=400, detail="Parametros invalidos")
         
+        # ========== INTENTAR OBTENER DEL CACHÉ ==========
+        cache_service = HousingCacheService()
+        
+        if cache_service.is_cache_valid(db):
+            # Caché válido: usar datos de Postgres
+            print(f"📦 Usando datos del caché para {metric} - {housing_type}")
+            cached_results = cache_service.get_from_cache(
+                db=db,
+                metric=metrica_real,
+                tipo_vivienda=tipo_real,
+                ccaa=ccaa,
+                anio_desde=anio_desde,
+                anio_hasta=anio_hasta
+            )
+            
+            # Convertir resultados de SQLAlchemy a diccionarios
+            filtered = cached_results
+            total = len(filtered)
+            
+            resultados = []
+            for item in filtered[offset:offset+limit]:
+                resultados.append({
+                    'periodo': item.periodo,
+                    'anio': item.anio,
+                    'trimestre': item.trimestre,
+                    'ccaa_codigo': item.ccaa_codigo,
+                    'ccaa_nombre': item.ccaa_nombre,
+                    'tipo_vivienda': item.tipo_vivienda,
+                    'metrica': item.metrica,
+                    'valor': item.valor
+                })
+            
+            return {
+                "success": True,
+                "count": len(resultados),
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+                "data": resultados,
+                "source": "cache"  # ← Indicador de que viene del caché
+            }
+        
+        # ========== CACHÉ INVÁLIDO O VACÍO: DESCARGAR DEL INE ==========
+        print(f"🌐 Caché inválido/vacío: descargando del INE...")
         df = descargar_datos_ine()
         
         if df is None or df.empty:
             raise HTTPException(status_code=503, detail="Datos no disponibles")
         
+        # Guardar en caché para futuras requests
+        print("🔍 DEBUG: Intentando guardar en caché...")
+        try:
+            print(f"🔍 DEBUG: df tiene {len(df)} registros")
+            print(f"🔍 DEBUG: Llamando a save_to_cache...")
+            result = cache_service.save_to_cache(db, df)
+            print(f"🔍 DEBUG: save_to_cache retornó {result}")
+        except Exception as e:
+            import traceback
+            print(f"⚠️ No se pudo guardar en caché: {e}")
+            print(f"⚠️ Traceback: {traceback.format_exc()}")
+            # Continuar igualmente, el caché es opcional
+        
+        # Filtrar como antes
         if debug:
             print(f"DEBUG: Buscando metrica='{metrica_real}', tipo='{tipo_real}'")
             print(f"DEBUG: Metricas unicas: {df['metrica'].unique()}")
             print(f"DEBUG: Tipos unicos: {df['tipo_vivienda'].unique()}")
         
-        # Filtrar
         filtered = df[
             (df['metrica'] == metrica_real) &
             (df['tipo_vivienda'] == tipo_real)
@@ -270,7 +333,8 @@ async def get_housing_data(
             "total": total,
             "offset": offset,
             "limit": limit,
-            "data": resultados
+            "data": resultados,
+            "source": "ine"  # ← Indicador de que viene del INE
         }
         
     except HTTPException:
@@ -278,6 +342,7 @@ async def get_housing_data(
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/housing/metadata")
 async def get_housing_metadata():
