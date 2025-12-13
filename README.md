@@ -19,24 +19,27 @@ Aplicación de visualización geoespacial y análisis temporal.
 - **Routing profesional:** React Router con navegación entre vistas
 - **Sistema de temas:** Claro/oscuro con persistencia en localStorage
 - **Vistas específicas por dataset:** Mapa, Gráficos y Datos en tabs
-- **Backend FastAPI:** Con filtros avanzados y estadísticas
+- **Caché inteligente:** Postgres con 24h TTL + histórico de snapshots
+- **Backend FastAPI:** Con filtros avanzados, estadísticas y caching
 - **Frontend React:** TypeScript, Bootstrap 5, Leaflet, Recharts
+- **Análisis multi-dimensionales:** Por región, período y tipo
 
 
 ## 📊 DATASETS INCLUIDOS  
 1. **COVID España** - Casos por comunidad autónoma y provincia (2023)
-2. **Clima España** - Condiciones meteorológicas actuales en ciudades españolas (OpenWeatherMap)
-3. **Elecciones España** - Resultados Generales 2023
-4. **Calidad del Aire España** - Mapa de calidad del aire actual en ciudades españolas (MITECO)
-5. **Vivienda España** - Índice de Precios de Vivienda en España (INE)
+2. **Clima España** - Condiciones meteorológicas actuales en ciudades españolas (OpenWeatherMap API)
+3. **Elecciones España** - Resultados Generales 2023 por partido político
+4. **Calidad del Aire España** - Mapa de calidad del aire actual en ciudades españolas (MITECO API)
+5. **Vivienda España** - Índice de Precios de Vivienda en España (INE API)
 
 
 ## 🛠️ TECNOLOGÍAS  
 - **Frontend:** React 18, TypeScript, Vite, Bootstrap 5, Leaflet, Recharts, React Router
 - **Backend:** FastAPI, Python 3.11, SQLAlchemy, GeoAlchemy2, Pandas
 - **Base de datos:** PostgreSQL 15 + PostGIS 3.3
+- **Caché:** Postgres con TTL automático y snapshots históricos
 - **Infraestructura:** Docker, Docker Compose, Nginx
-- **APIs externas:** OpenWeatherMap (para datos meteorológicos)
+- **APIs externas:** OpenWeatherMap (datos meteorológicos), INE (Índice de Precios de Vivienda), MITECO (calidad del aire)
 
 
 ## 🐳 INICIO RÁPIDO CON DOCKER  
@@ -91,42 +94,113 @@ npm run dev
 ## 📁 ESTRUCTURA  
 geo-data/  
 ├── docker-compose.yml  
+├── .env.example  
 ├── backend/  
-│   ├── app/main.py  
-│   └── app/routers/  
-│       ├── covid.py  
-│       ├── weather.py  
-│       └── elections.py  
+│   ├── app/  
+│   │   ├── main.py  
+│   │   ├── database.py  
+│   │   ├── models/  
+│   │   │   ├── covid.py  
+│   │   │   └── housing.py  
+│   │   ├── routers/  
+│   │   │   ├── covid.py  
+│   │   │   ├── weather.py  
+│   │   │   ├── elections.py  
+│   │   │   ├── air_quality.py  
+│   │   │   └── housing.py  
+│   │   └── services/  
+│   │       ├── housing_cache.py  
+│   │       └── ...  
 │   ├── requirements.txt  
 │   └── Dockerfile  
 ├── frontend/  
 │   ├── src/  
+│   │   ├── components/  
+│   │   │   ├── HousingChart.tsx  
+│   │   │   ├── HousingDatasetView.tsx  
+│   │   │   ├── HousingMapView.tsx  
+│   │   │   ├── HousingTable.tsx  
+│   │   │   └── ...  
+│   │   └── pages/  
 │   ├── package.json  
 │   └── Dockerfile  
 └── docker/  
+    └── init-db.sql  
 
 
 ## 🔌 ENDPOINTS API
-- `GET /` - Estado del API  
-- `GET /health` - Health check  
-- `GET /api/datasets` - Lista de datasets disponibles  
-- `GET /api/covid/data` - Todos los datos COVID  
-- `GET /api/covid/stats` - Estadísticas agregadas COVID  
-- `GET /api/covid/filter` - Filtrado avanzado con parámetros  
-- `GET /api/weather/data` - Datos meteorológicos  
-- `GET /api/weather/stats` - Estadísticas meteorológicas  
-- `GET /api/elections/data` - Resultados electorales  
-- `GET /api/elections/stats` - Estadísticas electorales  
-- `GET /api/elections/party/{partido}` - Resultados por partido  
-- `GET /air-quality/stations` - Obtiene estaciones de calidad del aire en España  
-- `GET /air-quality/station/{station_id}"` - Obtener datos completos de una estación específica  
-- `GET /air-quality/stats"` - Estadísticas de calidad del aire en España  
-- `GET /air-quality/pollutants` - Información sobre los contaminantes medidos  
-- `GET /housing/data` - Datos filtrados y paginados
-- `GET /housing/metadata` - Metadatos del dataset  
-- `GET /housing/health` - Health check del servicio
-- `GET /api/analysis/summary` - Análisis básico  
-- `GET /api/docs` - Swagger UI interactivo  
+**Health & Meta**
+
+- `GET /` - Estado del API
+- `GET /health` - Health check
+- `GET /api/datasets` - Lista de datasets disponibles
+
+**COVID**
+
+- `GET /api/covid/data` - Todos los datos COVID
+- `GET /api/covid/stats` - Estadísticas agregadas
+- `GET /api/covid/filter` - Filtrado avanzado
+
+**Clima**
+
+- `GET /api/weather/data` - Datos meteorológicos
+- `GET /api/weather/stats` - Estadísticas meteorológicas
+
+**Elecciones**
+
+- `GET /api/elections/data` - Resultados electorales
+- `GET /api/elections/stats` - Estadísticas electorales
+- `GET /api/elections/party/{partido}` - Resultados por partido
+
+**Calidad del Aire**
+
+- `GET /api/air-quality/stations` - Estaciones disponibles
+- `GET /api/air-quality/station/{station_id}` - Datos de estación específica
+- `GET /api/air-quality/stats` - Estadísticas agregadas
+- `GET /api/air-quality/pollutants` - Información contaminantes
+
+**Vivienda**
+
+- `GET /api/housing/data` - Datos filtrados y paginados (con caché)
+
+  - Query params: metric, housing_type, ccaa, anio_desde, anio_hasta, limit, offset
+  - Response incluye campo source: "cache" o "ine"
+
+
+- `GET /api/housing/metadata` - Metadatos del dataset
+- `GET /api/housing/health` - Health check del servicio
+
+**Documentación**
+
+- `GET /api/docs` - Swagger UI interactivo
+
+
+## 📊 CACHÉ DE DATOS
+### Arquitectura (Dataset Vivienda)
+El dataset de Vivienda implementa un sistema de caché inteligente en Postgres:
+
+**Tablas:**
+
+  - housing_ine_cache - Datos actuales (se sobrescribe cada 24h)
+  - housing_ine_snapshots - Histórico completo (crece indefinidamente)
+
+**Flujo:**
+
+1. Primera request: Descarga del INE → guarda en housing_ine_cache (~5-10s)
+2. Requests siguientes (24h): Consulta housing_ine_cache (~100ms)
+3. Después de 24h:
+
+    - Crea snapshot del contenido actual → housing_ine_snapshots
+    - Borra housing_ine_cache
+    - Descarga nuevos datos del INE
+    - Vuelve al paso 2
+
+**Beneficios:**
+
+✅ Reduce dependencia de API externa (INE)  
+✅ Performance ~100x más rápido (caché vs API)  
+✅ Histórico persistente para comparativas futuras  
+✅ Auto-refresh automático cada 24h  
 
 
 ## 🚢 DESPLIEGUE  
@@ -143,11 +217,14 @@ API_URL=http://localhost:8180/api
 
 
 ## 📈 Próximas características  
-Más datasets (turismo, economía)  
-Análisis predictivo básico  
-Exportación de datos (CSV, PNG)  
-Autenticación de usuarios  
-Panel de administración  
+Más datasets (turismo, economía, demografía)
+Análisis predictivo básico
+Exportación de datos (PDF, PNG)
+Autenticación de usuarios
+Panel de administración
+Comparativas temporales automáticas (snapshots)
+Alertas por anomalías
+API de terceros (webhooks)
 
 
 ## 🤝 Contribuir  
