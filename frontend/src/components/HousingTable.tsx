@@ -8,6 +8,7 @@ import {
   FaBuilding,
   FaChartLine,
   FaCity,
+  FaTrashAlt,
 } from 'react-icons/fa';
 import { HousingData } from './types';
 
@@ -92,7 +93,7 @@ const HousingTable: React.FC<Props> = ({
 
         <div className="card border-primary mb-4 bg-body">
           <div className="card-header bg-light">
-            <h5 className="h5 mb-0">⚙️ Filtros de Datos (Independientes)</h5>
+            <h5 className="h5 mb-0">⚙️ Filtros de Datos</h5>
           </div>
           <div className="card-body">
             <div className="row g-3">
@@ -201,8 +202,9 @@ const HousingTable: React.FC<Props> = ({
                   className="btn btn-danger flex-grow-1"
                   onClick={onClearFilters}
                   disabled={isFiltering}
+                  title="Limpiar todos los filtros"
                 >
-                  🗑️ Limpiar
+                  <FaTrashAlt className="me-2" />
                 </button>
               </div>
             </div>

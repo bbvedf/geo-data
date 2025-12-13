@@ -170,7 +170,22 @@ function HousingDatasetView() {
   );
 
   // ========== CARGA INICIAL ==========
-  useEffect(() => {
+  // Sin focos
+    useEffect(() => {
+      // Scroll al inicio cuando se carga el componente
+      window.scrollTo(0, 0);
+    }, []);
+
+    // O si quieres ser más específico, cuando termina de cargar:
+
+    useEffect(() => {
+      if (!loading) {
+        window.scrollTo(0, 0);
+      }
+    }, [loading]);
+
+    // Carga de datos
+    useEffect(() => {
     const init = async () => {
       try {
         setLoading(true);
@@ -388,8 +403,8 @@ function HousingDatasetView() {
                 <h5 className="h5 mb-0">⚙️ Filtros del Análisis</h5>
               </div>
               <div className="card-body">
-                <div className="row g-3">
-                  <div className="col-md-4">
+                <div className="row g-3 align-items-end">
+                  <div className="col-md-3">
                     <label className="form-label">Métrica</label>
                     <select
                       className="form-select"
@@ -405,7 +420,7 @@ function HousingDatasetView() {
                     </select>
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label className="form-label">Tipo de Vivienda</label>
                     <select
                       className="form-select"
@@ -421,7 +436,7 @@ function HousingDatasetView() {
                     </select>
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label className="form-label">Área Geográfica</label>
                     <select
                       className="form-select"
@@ -436,10 +451,10 @@ function HousingDatasetView() {
                       ))}
                     </select>
                   </div>
-
-                  <div className="col-12 d-flex gap-2 justify-content-end">
+                
+                  <div className="col-md-3 d-flex align-items-end gap-2">
                     <button
-                      className="btn btn-danger"
+                      className="btn btn-danger flex-grow-1"
                       onClick={clearChartFilters}
                       disabled={isLoadingChart}
                       title="Limpiar todos los filtros"
@@ -457,6 +472,34 @@ function HousingDatasetView() {
                 </div>
               </div>
             </div>
+
+               {/* FILTROS ACTIVOS */}              
+                {(chartFilters.metric !== DEFAULT_FILTERS.metric ||
+                  chartFilters.housingType !== DEFAULT_FILTERS.housingType ||
+                  chartFilters.ccaa !== DEFAULT_FILTERS.ccaa) && (
+                  <div className="alert alert-info mb-3">
+                    <small className="text-muted">
+                      <strong>⚡ Filtros activos:</strong>
+                    </small>
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      {chartFilters.metric !== DEFAULT_FILTERS.metric && (
+                        <span className="badge bg-info">
+                          Métrica: {METRICS.find((m) => m.value === chartFilters.metric)?.label}
+                        </span>
+                      )}
+                      {chartFilters.housingType !== DEFAULT_FILTERS.housingType && (
+                        <span className="badge bg-info">
+                          Tipo: {HOUSING_TYPES.find((t) => t.value === chartFilters.housingType)?.label}
+                        </span>
+                      )}
+                      {chartFilters.ccaa !== DEFAULT_FILTERS.ccaa && (
+                        <span className="badge bg-info">
+                          CCAA: {CCAA_OPTIONS.find((c) => c.value === chartFilters.ccaa)?.label}
+                        </span>
+                      )}
+                    </div>
+                  </div> 
+                )}
 
             {isLoadingChart ? (
               <div className="text-center py-5">
