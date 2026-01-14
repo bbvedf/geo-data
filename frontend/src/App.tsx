@@ -6,7 +6,7 @@ import { Header, DashboardView, CovidDatasetView, ThemeMenu, DatasetNotFoundView
 
 
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
     document.body.classList.remove('theme-light', 'theme-dark');
@@ -15,6 +15,17 @@ function App() {
 
     // Disparar evento personalizado
     window.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
+  }, [theme]);
+
+  // Sincronizar tema entre pestañas
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'theme' && e.newValue && e.newValue !== theme) {
+        setTheme(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [theme]);
 
 

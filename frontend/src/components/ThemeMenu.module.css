@@ -19,7 +19,8 @@
   gap: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-right: 0.5rem; /* Margen adicional a la derecha */
+  margin-right: 0.5rem;
+  /* Margen adicional a la derecha */
 }
 
 .hamburgerButton:hover {
@@ -38,13 +39,14 @@
 .menuDropdown {
   position: absolute;
   right: 0;
-  top: calc(100% + 0.5rem); /* Aparece debajo del botón */
+  top: calc(100% + 0.5rem);
+  /* Aparece debajo del botón */
   background: var(--color-card-bg);
   border: 1px solid var(--color-input-border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 0.5rem;
-  min-width: 200px;
+  min-width: 260px;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -77,6 +79,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -113,39 +116,119 @@
 }
 
 
-.submenuHeader {
-  padding: 8px 12px;
+/* Cabeceras de sección */
+.sectionHeader {
+  padding: 10px 12px 5px;
+  font-size: 0.75rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  color: #fff;
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: default;
-  user-select: none;
-  margin: 8px 0 4px 0;
-  border-radius: 6px;  
-  
-  /* Usar variables del tema */
-  background: linear-gradient(135deg, var(--color-link), var(--color-button-bg-hover));
-  opacity: 0.9;
+  letter-spacing: 1px;
+  opacity: 0.7;
 }
 
+.menuItem,
+.menuItemHeader {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0.75rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  text-decoration: none;
+}
 
+.menuItemHeader {
+  flex: 1;
+}
+
+.menuItem:hover,
+.menuItemHeader:hover {
+  background: var(--color-input-bg);
+  color: var(--color-link);
+}
+
+.menuItem i,
+.menuSubItem i {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.menuItemContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.submenuToggle {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.submenuToggle:hover {
+  opacity: 1;
+  color: var(--color-link);
+}
+
+/* Submenús */
+.submenuContent {
+  padding-left: 2rem;
+  margin-bottom: 0.25rem;
+}
+
+.menuSubItem {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0.6rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+  text-decoration: none;
+}
+
+.menuSubItem:hover {
+  background: var(--color-input-bg);
+  opacity: 1;
+  color: var(--color-link);
+}
+
+.logoutItem {
+  margin-top: 0.25rem;
+  color: #ff4d4d;
+}
+
+.logoutItem:hover {
+  background: rgba(255, 77, 77, 0.1);
+  color: #ff4d4d;
+}
 
 /* Versión móvil */
 @media (max-width: 768px) {
-  .menuContainer {
-    top: 0.75rem;
-    right: 0.75rem;
-  }
-  
   .menuDropdown {
-    right: -0.5rem; /* Ajuste fino de posición */
-    top: calc(100% + 0.25rem); /* Se mantiene debajo del botón */
-  }
- 
-  .menuItem {
-    padding: 0.6rem 1rem;
-    font-size: 0.95rem;
+    min-width: 250px;
   }
 }
