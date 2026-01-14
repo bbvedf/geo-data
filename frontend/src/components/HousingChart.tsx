@@ -60,7 +60,7 @@ const HousingChart = ({ data, metric, housingType, ccaa }: HousingChartProps) =>
         
         const promises = types.map(tipo =>
           fetch(
-            `http://localhost:8180/api/housing/data?metric=${metric}&housing_type=${tipo}&ccaa=${ccaaParam}&limit=5000`
+            `/api/geo/api/housing/data?metric=${metric}&housing_type=${tipo}&ccaa=${ccaaParam}&limit=5000`
           )
             .then(res => res.json())
             .then(json => json.data || [])

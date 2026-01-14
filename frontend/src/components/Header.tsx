@@ -28,7 +28,7 @@ const Header = () => {
             <div className="d-flex align-items-center">
               {/* Logo según tema */}
               <img 
-                src={theme === 'dark' ? '/logo_dark.png' : '/logo_light.png'} 
+                src={theme === 'dark' ? '/geo/logo_dark.png' : '/geo/logo_light.png'} 
                 alt="Geo-Data Analytics" 
                 height="40" 
                 className="me-3"

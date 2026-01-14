@@ -4,7 +4,7 @@ import axios from 'axios';
 import { FaSpinner, FaChevronDown, FaChevronUp, FaSearch } from 'react-icons/fa';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 });
 
 interface CovidData {

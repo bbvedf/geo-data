@@ -14,6 +14,7 @@ from app.routers.air_quality import router as air_quality_router
 from app.routers.housing import router as housing_router
 
 app = FastAPI(
+    root_path="/api/geo",
     title="Geo-Data API",
     description="API para análisis geoespacial y temporal",
     version="0.1.0",
@@ -61,7 +62,7 @@ async def get_openapi():
 @app.get("/api/docs", include_in_schema=False)
 async def api_docs():
     return get_swagger_ui_html(
-        openapi_url="/api/openapi.json",
+        openapi_url="/api/geo/api/openapi.json",
         title="Geo-Data API Documentation"
     )
 

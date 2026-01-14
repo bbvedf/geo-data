@@ -5,7 +5,7 @@ import { FaSpinner } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 });
 
 interface PartyResultsData {

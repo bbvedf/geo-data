@@ -8,7 +8,7 @@ import ElectionPartyView from './ElectionPartyView';
 import { FaTrashAlt, FaSpinner, FaSearch, FaChartBar, FaMapMarkedAlt, FaUsers, FaTable } from 'react-icons/fa';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 });
 
 interface ElectionDataLight {

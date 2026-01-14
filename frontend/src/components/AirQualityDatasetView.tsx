@@ -18,7 +18,7 @@ import {
 } from 'react-icons/fa';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 });
 
 

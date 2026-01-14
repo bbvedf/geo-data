@@ -7,7 +7,7 @@ import CovidTable from './CovidTable'
 import { FaFilter, FaTrashAlt, FaSpinner, FaMapMarkedAlt, FaChartBar, FaTable } from 'react-icons/fa';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 })
 
 interface CovidDataLight {

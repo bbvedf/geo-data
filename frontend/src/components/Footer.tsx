@@ -20,7 +20,7 @@ const Footer = ({ dataCount = 0 }: FooterProps) => {
             <div className="col-md-4">
               <div className="d-flex flex-column flex-sm-row gap-2 justify-content-md-end">
                 <a
-                  href="http://localhost:8180/api"
+                  href="https://ryzenpc.mooo.com/api/geo/api"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-outline-primary"
@@ -28,7 +28,7 @@ const Footer = ({ dataCount = 0 }: FooterProps) => {
                   🌐 Backend API
                 </a>
                 <a
-                  href="http://localhost:8180/api/docs"
+                  href="https://ryzenpc.mooo.com/api/geo/api/docs"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-outline-primary"

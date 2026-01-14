@@ -6,7 +6,7 @@ import WeatherChart from './WeatherChart';
 import { FaFilter, FaTrashAlt, FaSpinner, FaThermometerHalf, FaWind, FaTint } from 'react-icons/fa';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8180',
+  baseURL: '/api/geo',
 });
 
 interface WeatherData {

@@ -141,7 +141,7 @@ function HousingDatasetView() {
         });
 
         const response = await fetch(
-          `http://localhost:8180/api/housing/data?${params}`,
+          `/api/geo/api/housing/data?${params}`,
           { signal }
         );
 
